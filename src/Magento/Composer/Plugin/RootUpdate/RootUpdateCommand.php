@@ -511,7 +511,7 @@ class RootUpdateCommand extends UpdateCommand
             if ($installVal === null) {
                 $action = static::ADD_VAL;
             } else {
-                $action = 'change';
+                $action = static::CHANGE_VAL;
                 $conflictDesc = "add $field=$prettyTarget but it is instead $prettyInstall";
             }
         } elseif ($targetVal === null) {
