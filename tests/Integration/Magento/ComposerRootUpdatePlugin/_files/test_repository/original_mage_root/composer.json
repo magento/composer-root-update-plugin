@@ -1,0 +1,41 @@
+{
+    "name": "magento/project-community-edition",
+    "version": "999.999.999",
+    "type": "project",
+    "description": "Test Magento root project composer.json for the default install of the user's pre-upgrade version",
+    "require": {
+        "magento/product-community-edition" : "999.999.999",
+        "magento/composer-root-update-plugin": "*",
+        "vendor1/package1": "1.0.0"
+    },
+    "require-dev": {
+        "vendor1/dev-package1": "1.0.0",
+        "vendor1/dev-package2": "2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Magento\\": "src/Magento"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Magento\\Tools\\": "dev/tools/Magento/Tools/"
+        }
+    },
+    "conflict": {
+        "vendor1/conflicting1": "1.0.0",
+        "vendor1/conflicting2": "2.0.0"
+    },
+    "extra": {
+        "extra-key1": "base1",
+        "extra-key2": "base2"
+    },
+    "provide": {
+        "magento/sub-package1": "1.0.0",
+        "magento/sub-package2": "2.0.0",
+        "magento/sub-package3": "3.0.0"
+    },
+    "suggest": {
+        "sample-data": "Suggested Sample Data 1.0.0"
+    }
+}
