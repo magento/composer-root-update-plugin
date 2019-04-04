@@ -16,11 +16,11 @@ use Composer\Repository\PlatformRepository;
 use Symfony\Component\Console\Input\InputInterface;
 
 /**
- * Class ExtendableRequireCommand
- *
  * Necessary functionality from Composer's native RequireCommand class split out of the larger original methods
  *
  * Functions here may need to be updated to match future versions of Composer
+ *
+ * @see RequireCommand
  */
 abstract class ExtendableRequireCommand extends RequireCommand
 {
@@ -255,6 +255,8 @@ abstract class ExtendableRequireCommand extends RequireCommand
      *
      * Copied from RequireCommand::revertComposerFile() in Composer 1.8.0, it needs to be separate to use the plugin's
      * file backup rather than the one that RequireCommand natively picks up, which will contain the plugin's changes
+     *
+     * @see RequireCommand::revertComposerFile()
      *
      * @param string $message
      * @return void

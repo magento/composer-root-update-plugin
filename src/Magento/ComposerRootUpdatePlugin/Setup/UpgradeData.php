@@ -11,7 +11,7 @@ use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\UpgradeDataInterface;
 
 /**
- * Class UpgradeData
+ * Magento module hook to attach plugin installation functionality to `magento setup` operations
  */
 class UpgradeData implements UpgradeDataInterface
 {

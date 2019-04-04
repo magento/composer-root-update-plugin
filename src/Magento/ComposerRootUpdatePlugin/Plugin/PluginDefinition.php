@@ -17,8 +17,6 @@ use Composer\Plugin\PluginInterface;;
 use Magento\ComposerRootUpdatePlugin\Setup\WebSetupWizardPluginInstaller;
 
 /**
- * Class PluginDefinition
- *
  * Composer's entry point for the plugin, defines the command provider and Web Setup Wizard Installer's event triggers
  */
 class PluginDefinition implements PluginInterface, Capable, EventSubscriberInterface

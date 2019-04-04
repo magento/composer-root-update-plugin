@@ -13,6 +13,7 @@ use Composer\Json\JsonFile;
 use Composer\Package\BasePackage;
 use Composer\Package\Locker;
 use Composer\Package\PackageInterface;
+use Composer\Package\RootPackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Package\Version\VersionSelector;
 use Composer\Repository\CompositeRepository;
@@ -20,6 +21,9 @@ use Magento\ComposerRootUpdatePlugin\ComposerReimplementation\AccessibleRootPack
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 
+/**
+ * Contains methods to retrieve composer Package objects for the relevant Magento project root packages
+ */
 class RootPackageRetriever
 {
     /**
@@ -112,7 +116,7 @@ class RootPackageRetriever
         $this->targetRootPackage = null;
         $this->fetchedTarget = null;
         if (!$overrideOriginalEdition || !$overrideOriginalVersion) {
-            $this->parseOriginalVersionAndEditionFromLock();
+            $this->parseOriginalVersionAndEditionFromLock($overrideOriginalEdition, $overrideOriginalVersion);
         } else {
             $this->originalEdition = $overrideOriginalEdition;
             $this->originalVersion = $overrideOriginalVersion;
@@ -124,7 +128,7 @@ class RootPackageRetriever
      * Get the project package that should be used as the basis for Magento root comparisons
      *
      * @param bool $overrideOption
-     * @return PackageInterface|boolean
+     * @return PackageInterface|bool
      */
     public function getOriginalRootPackage($overrideOption)
     {
@@ -167,6 +171,14 @@ class RootPackageRetriever
         return $this->originalRootPackage;
     }
 
+    /**
+     * Get the project package that should be used as the target for Magento root comparisons
+     *
+     * @param bool $ignorePlatformReqs
+     * @param string $phpVersion
+     * @param string $preferredStability
+     * @return PackageInterface|bool
+     */
     public function getTargetRootPackage(
         $ignorePlatformReqs = true,
         $phpVersion = null,
@@ -196,6 +208,11 @@ class RootPackageRetriever
         return $this->targetRootPackage;
     }
 
+    /**
+     * Get the currently installed root package
+     *
+     * @return RootPackageInterface
+     */
     public function getUserRootPackage()
     {
         return $this->composer->getPackage();
@@ -267,9 +284,11 @@ class RootPackageRetriever
     /**
      * Gets the Magento product package in composer.lock and populates the version and edition in CommonUtils
      *
+     * @param string $overrideEdition
+     * @param string $overrideVersion
      * @return void
      */
-    protected function parseOriginalVersionAndEditionFromLock()
+    protected function parseOriginalVersionAndEditionFromLock($overrideEdition = null, $overrideVersion = null)
     {
         $locker = $this->getRootLocker();
         if (!$locker || !$locker->isLocked()) {
@@ -294,11 +313,21 @@ class RootPackageRetriever
         }
 
         if ($lockedMageProduct) {
-            $this->originalEdition = PackageUtils::getMagentoProductEdition($lockedMageProduct->getName());
-            $this->originalVersion = $lockedMageProduct->getVersion();
-            $this->prettyOriginalVersion = $lockedMageProduct->getPrettyVersion();
-            if (!$this->prettyOriginalVersion) {
+            if ($overrideEdition) {
+                $this->originalEdition = $overrideEdition;
+            } else {
+                $this->originalEdition = PackageUtils::getMagentoProductEdition($lockedMageProduct->getName());
+            }
+
+            if ($overrideVersion) {
+                $this->originalVersion = $overrideVersion;
                 $this->prettyOriginalVersion = $this->originalVersion;
+            } else {
+                $this->originalVersion = $lockedMageProduct->getVersion();
+                $this->prettyOriginalVersion = $lockedMageProduct->getPrettyVersion();
+                if (!$this->prettyOriginalVersion) {
+                    $this->prettyOriginalVersion = $this->originalVersion;
+                }
             }
         }
     }

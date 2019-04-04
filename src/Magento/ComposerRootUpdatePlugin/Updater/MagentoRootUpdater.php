@@ -13,9 +13,7 @@ use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\ComposerRootUpdatePlugin\Plugin\PluginDefinition;
 
 /**
- * Class MagentoRootUpdater
- *
- *
+ * Handles updates of the Magento root project composer.json file based on necessary changes for the target version
  */
 class MagentoRootUpdater
 {
@@ -91,9 +89,9 @@ class MagentoRootUpdater
             "Base Magento project package version: magento/project-$originalEdition-edition $prettyOriginalVersion"
         );
 
-        $resolver = new ConflictResolver($overrideOption, $retriever);
+        $resolver = new DeltaResolver($overrideOption, $retriever);
 
-        $jsonChanges = $resolver->resolveConflicts();
+        $jsonChanges = $resolver->resolveRootDeltas();
 
         if ($jsonChanges) {
             $this->jsonChanges = $jsonChanges;

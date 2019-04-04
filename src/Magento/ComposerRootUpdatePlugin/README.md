@@ -22,17 +22,17 @@ If the local Magento installation has previously been updated from a previous Ma
 
 In this case, run the following command with the appropriate values to correct the existing `composer.json` file before proceeding with the expected `composer require` command for the target Magento product.
 
-    composer require <current_Magento_package> <current_version> --previous-magento-package <previous_Magento_package>=<previous_Magento_version>
+    composer require <current_Magento_package> <current_version> --base-magento-edition <community|enterprise> --base-magento-version <original_Magento_version>
 
 ## Conflicting custom values
 If the `composer.json` file has custom changes that do not match the values the plugin expects according to the installed Magento product, the entries may need to be corrected to values compatible with the target Magento package.
 
 To resolve these conflicts interactively, re-run the `composer require` command with the `--interactive-magento-conflicts` option.
 
-To override all conflicting custom values with the expected Magento values, re-run the `composer require` command with the `--use-magento-values` option.
+To override all conflicting custom values with the expected Magento values, re-run the `composer require` command with the `--use-default-magento-values` option.
 
 ## Bypassing the plugin
-To run the native `composer require` command without the plugin's updates, use the `--skip-magento-root` option.
+To run the native `composer require` command without the plugin's updates, use the `--skip-magento-root-plugin` option.
 
 ## Refreshing the plugin for the Web Setup Wizard
 If the `var` directory in the Magento root folder has been cleared, the plugin may need to be re-installed there to function when updating Magento through the Web Setup Wizard.

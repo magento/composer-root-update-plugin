@@ -11,7 +11,7 @@ use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 
 /**
- * Class RecurringData
+ * Magento module hook to attach plugin installation functionality to `magento setup` operations
  */
 class RecurringData implements InstallDataInterface
 {

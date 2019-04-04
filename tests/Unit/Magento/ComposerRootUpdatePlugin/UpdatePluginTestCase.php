@@ -11,7 +11,7 @@ use Composer\Semver\Constraint\Constraint;
 use ReflectionClass;
 
 /**
- * Class UpdatePluginTestCase
+ * Helper functions for common test data creation and assertion operations
  */
 abstract class UpdatePluginTestCase extends \PHPUnit\Framework\TestCase
 {

@@ -13,9 +13,9 @@ use Magento\ComposerRootUpdatePlugin\Plugin\Commands\MageRootRequireCommand;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 
 /**
- * Class ConflictResolver
+ * Calculates updated values based on the deltas between original version, target version, and user customizations
  */
-class ConflictResolver
+class DeltaResolver
 {
     /**
      * Types of action to take on individual values when a delta is found; returned by findResolution()
@@ -55,7 +55,7 @@ class ConflictResolver
     protected $userRootPackage;
 
     /**
-     * ConflictResolver constructor.
+     * DeltaResolver constructor.
      *
      * @param boolean $overrideUserValues
      * @param RootPackageRetriever $retriever
@@ -76,20 +76,35 @@ class ConflictResolver
      *
      * @return array
      */
-    public function resolveConflicts()
+    public function resolveRootDeltas()
     {
         $original = $this->originalMageRootPackage;
         $target = $this->targetMageRootPackage;
         $user = $this->userRootPackage;
 
         $this->resolveLinkSection('require', $original->getRequires(), $target->getRequires(), $user->getRequires());
-        $this->resolveLinkSection('require-dev', $original->getDevRequires(), $target->getDevRequires(), $user->getDevRequires());
-        $this->resolveLinkSection('conflict', $original->getConflicts(), $target->getConflicts(), $user->getConflicts());
+        $this->resolveLinkSection(
+            'require-dev',
+            $original->getDevRequires(),
+            $target->getDevRequires(),
+            $user->getDevRequires()
+        );
+        $this->resolveLinkSection(
+            'conflict',
+            $original->getConflicts(),
+            $target->getConflicts(),
+            $user->getConflicts()
+        );
         $this->resolveLinkSection('provide', $original->getProvides(), $target->getProvides(), $user->getProvides());
         $this->resolveLinkSection('replace', $original->getReplaces(), $target->getReplaces(), $user->getReplaces());
 
         $this->resolveArraySection('autoload', $original->getAutoload(), $target->getAutoload(), $user->getAutoload());
-        $this->resolveArraySection('autoload-dev', $original->getDevAutoload(), $target->getDevAutoload(), $user->getDevAutoload());
+        $this->resolveArraySection(
+            'autoload-dev',
+            $original->getDevAutoload(),
+            $target->getDevAutoload(),
+            $user->getDevAutoload()
+        );
         $this->resolveArraySection('extra', $original->getExtra(), $target->getExtra(), $user->getExtra());
         $this->resolveArraySection('suggest', $original->getSuggests(), $target->getSuggests(), $user->getSuggests());
 

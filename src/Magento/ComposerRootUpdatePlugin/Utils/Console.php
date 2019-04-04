@@ -18,9 +18,7 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Class Console
- *
- * Shared static logger and interaction methods
+ * Singleton logger with console interaction methods
  */
 class Console
 {

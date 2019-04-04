@@ -14,8 +14,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Class WebSetupWizardInstallCommand
- *
  * Namespace for any plugin-specific operations that do not fit under other commands
  *
  * Checks the first argument for the actual function to run

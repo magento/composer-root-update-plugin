@@ -7,14 +7,15 @@
 namespace Magento\ComposerRootUpdatePlugin\ComposerReimplementation;
 
 use Composer\Package\BasePackage;
+use Composer\Package\Loader\RootPackageLoader;
 use Composer\Package\Version\VersionParser;
 
 /**
- * Class AccessibleRootPackageLoader
- *
- * Copy and expose necessary private methods
+ * Copy and expose necessary private methods of Composer's RootPackageLoader implementation
  *
  * Functions here may need to be updated to match future versions of Composer
+ *
+ * @see RootPackageLoader
  */
 class AccessibleRootPackageLoader
 {

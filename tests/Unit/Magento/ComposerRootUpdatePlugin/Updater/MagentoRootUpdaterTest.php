@@ -25,9 +25,6 @@ use Magento\ComposerRootUpdatePlugin\UpdatePluginTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Console\Input\InputInterface;
 
-/**
- * Class MagentoRootUpdaterTest
- */
 class MagentoRootUpdaterTest extends UpdatePluginTestCase
 {
     /** @var MockObject|Composer */

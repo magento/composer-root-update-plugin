@@ -12,10 +12,7 @@ use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\ComposerRootUpdatePlugin\UpdatePluginTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
-/**
- * Class ConflictResolverTest
- */
-class ConflictResolverTest extends UpdatePluginTestCase
+class DeltaResolverTest extends UpdatePluginTestCase
 {
     /** @var MockObject|BaseIO */
     public $io;
@@ -25,31 +22,31 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionAddElement()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $resolution = $resolver->findResolution('field', null, 'newVal', null);
 
-        $this->assertEquals(ConflictResolver::ADD_VAL, $resolution);
+        $this->assertEquals(DeltaResolver::ADD_VAL, $resolution);
     }
 
     public function testFindResolutionRemoveElement()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $resolution = $resolver->findResolution('field', 'oldVal', null, 'oldVal');
 
-        $this->assertEquals(ConflictResolver::REMOVE_VAL, $resolution);
+        $this->assertEquals(DeltaResolver::REMOVE_VAL, $resolution);
     }
 
     public function testFindResolutionChangeElement()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'oldVal');
 
-        $this->assertEquals(ConflictResolver::CHANGE_VAL, $resolution);
+        $this->assertEquals(DeltaResolver::CHANGE_VAL, $resolution);
     }
 
     public function testFindResolutionNoUpdate()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'newVal');
 
         $this->assertNull($resolution);
@@ -60,7 +57,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
         $this->io->expects($this->at(0))->method('writeError')
             ->with($this->stringContains('will not be changed'));
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'conflictVal');
 
         $this->assertNull($resolution);
@@ -68,43 +65,43 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionConflictOverride()
     {
-        $resolver = new ConflictResolver(true, $this->retriever);
+        $resolver = new DeltaResolver(true, $this->retriever);
 
         $this->io->expects($this->at(1))->method('writeError')
             ->with($this->stringContains('overriding local changes'));
 
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'conflictVal');
 
-        $this->assertEquals(ConflictResolver::CHANGE_VAL, $resolution);
+        $this->assertEquals(DeltaResolver::CHANGE_VAL, $resolution);
     }
 
     public function testFindResolutionConflictOverrideRestoreRemoved()
     {
-        $resolver = new ConflictResolver(true, $this->retriever);
+        $resolver = new DeltaResolver(true, $this->retriever);
 
         $this->io->expects($this->at(1))->method('writeError')
             ->with($this->stringContains('overriding local changes'));
 
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', null);
 
-        $this->assertEquals(ConflictResolver::ADD_VAL, $resolution);
+        $this->assertEquals(DeltaResolver::ADD_VAL, $resolution);
     }
 
     public function testFindResolutionInteractiveConfirm()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         Console::setInteractive(true);
         $this->io->method('isInteractive')->willReturn(true);
         $this->io->expects($this->once())->method('askConfirmation')->willReturn(true);
 
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'conflictVal');
 
-        $this->assertEquals(ConflictResolver::CHANGE_VAL, $resolution);
+        $this->assertEquals(DeltaResolver::CHANGE_VAL, $resolution);
     }
 
     public function testFindResolutionInteractiveNoConfirm()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         Console::setInteractive(true);
         $this->io->method('isInteractive')->willReturn(true);
         $this->io->expects($this->once())->method('askConfirmation')->willReturn(false);
@@ -116,7 +113,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionNonInteractiveEnvironmentError()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         Console::setInteractive(true);
         $this->io->method('isInteractive')->willReturn(false);
 
@@ -129,7 +126,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testResolveNestedArrayNonArrayAdd()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveNestedArray('field', null, 'newVal', null);
 
         $this->assertEquals([true, 'newVal'], $result);
@@ -137,7 +134,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testResolveNestedArrayNonArrayRemove()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveNestedArray('field', 'oldVal', null, 'oldVal');
 
         $this->assertEquals([true, null], $result);
@@ -145,7 +142,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testResolveNestedArrayNonArrayChange()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveNestedArray('field', 'oldVal', 'newVal', 'oldVal');
 
         $this->assertEquals([true, 'newVal'], $result);
@@ -153,7 +150,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayMismatchedArray()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             'oldVal',
@@ -166,7 +163,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayMismatchedMap()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['oldVal'],
@@ -181,7 +178,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
     {
         $expected = ['val1', 'val2', 'val3'];
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['val1'],
@@ -194,7 +191,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayFlatArrayRemoveElement()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['val1', 'val2', 'val3'],
@@ -207,7 +204,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayFlatArrayAddAndRemoveElement()
     {
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['val1', 'val2', 'val3'],
@@ -222,7 +219,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key1' => 'val1', 'key2' => 'val2', 'key3' => 'val3'];
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => 'val1'],
@@ -237,7 +234,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key2' => 'val2', 'key3' => 'val3'];
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => 'val1', 'key2' => 'val2'],
@@ -252,7 +249,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key3' => 'val3', 'key4' => 'val4'];
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => 'val1', 'key2' => 'val2'],
@@ -267,7 +264,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key1' => ['k1v1', 'k1v2', 'k1v3'], 'key2' => ['k2v1', 'k2v2'], 'key3' => ['k3v1']];
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => ['k1v1'], 'key2' => ['k2v1', 'k2v2']],
@@ -288,7 +285,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key1' => ['k1v1', 'k1v3'], 'key2' => ['k2v2'], 'key3' => ['k3v1']];
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => ['k1v1', 'k1v2'], 'key2' => ['k2v1', 'k2v2']],
@@ -313,7 +310,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
         $targetMageLinks = array_merge($originalMageLinks, $this->createLinks(1, 'targetMage/link'));
         $expected = array_merge($targetMageLinks, $userLink);
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveLinkSection(
             'require',
             $originalMageLinks,
@@ -332,7 +329,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
         $targetMageLinks = array_slice($originalMageLinks, 1);
         $expected = array_merge($targetMageLinks, $userLink);
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveLinkSection(
             'require',
             $originalMageLinks,
@@ -351,7 +348,7 @@ class ConflictResolverTest extends UpdatePluginTestCase
         $targetMageLinks = $this->changeLink($originalMageLinks, 1);
         $expected = array_merge($targetMageLinks, $userLink);
 
-        $resolver = new ConflictResolver(false, $this->retriever);
+        $resolver = new DeltaResolver(false, $this->retriever);
         $result = $resolver->resolveLinkSection(
             'require',
             $originalMageLinks,

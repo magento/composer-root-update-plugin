@@ -11,7 +11,7 @@ use Composer\Package\Link;
 use Composer\Package\Version\VersionParser;
 
 /**
- * Class PackageUtils
+ * Common package-related utility functions
  */
 class PackageUtils
 {

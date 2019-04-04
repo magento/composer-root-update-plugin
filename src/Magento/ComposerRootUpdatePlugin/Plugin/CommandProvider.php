@@ -11,7 +11,7 @@ use Magento\ComposerRootUpdatePlugin\Plugin\Commands\MageRootRequireCommand;
 use Magento\ComposerRootUpdatePlugin\Plugin\Commands\UpdatePluginNamespaceCommands;
 
 /**
- * Class CommandProvider
+ * Composer boilerplate to supply the plugin's commands to the command registry
  */
 class CommandProvider implements CommandProviderCapability
 {

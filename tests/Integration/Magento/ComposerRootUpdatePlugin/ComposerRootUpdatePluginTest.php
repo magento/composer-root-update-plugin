@@ -72,7 +72,7 @@ class ComposerRootUpdatePluginTest extends \PHPUnit\Framework\TestCase
         static::configureComposerJson(__DIR__ . '/_files/expected_override.composer.json', $expectedDir);
 
         static::execComposer(
-            'require magento/product-community-edition=1000.1000.1000 --no-update --use-magento-values'
+            'require magento/product-community-edition=1000.1000.1000 --no-update --use-default-magento-values'
         );
 
         $this->assertJsonFileEqualsJsonFile("$expectedDir/composer.json", static::$workingDir . '/composer.json');

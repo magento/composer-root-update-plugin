@@ -6,7 +6,6 @@
 
 namespace Magento\ComposerRootUpdatePlugin\Plugin\Commands;
 
-use Composer\Package\Version\VersionParser;
 use Magento\ComposerRootUpdatePlugin\ComposerReimplementation\ExtendableRequireCommand;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
@@ -20,19 +19,18 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Class RootUpdateCommand
+ * Extend composer's native `require` command and attach plugin functionality to the original process
  */
 class MageRootRequireCommand extends ExtendableRequireCommand
 {
     /**
      * CLI Options
      */
-    const SKIP_OPT = 'skip-magento-root';
-    const OVERRIDE_OPT = 'use-magento-values';
+    const SKIP_OPT = 'skip-magento-root-plugin';
+    const OVERRIDE_OPT = 'use-default-magento-values';
     const INTERACTIVE_OPT = 'interactive-magento-conflicts';
-    const PREVIOUS_PACKAGE_OPT = 'previous-magento-package';
-    
-    const PREV_OPT_HINT = 'magento/product-<enterprise|community>-edition=<version>';
+    const BASE_EDITION_OPT = 'base-magento-edition';
+    const BASE_VERSION_OPT = 'base-magento-version';
 
     /**
      * @var string $commandName
@@ -92,11 +90,17 @@ class MageRootRequireCommand extends ExtendableRequireCommand
                 'Interactive interface to resolve conflicts during the Magento root composer.json update.'
             )
             ->addOption(
-                static::PREVIOUS_PACKAGE_OPT,
+                static::BASE_EDITION_OPT,
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Use a previously-installed Magento product version as the base for composer.json updates',
-                static::PREV_OPT_HINT
+                'Edition of the initially-installed Magento product to use as the base for composer.json updates. ' .
+                'Valid values: community, enterprise'
+            )
+            ->addOption(
+                static::BASE_VERSION_OPT,
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Version of the initially-installed Magento product to use as the base for composer.json updates.'
             );
 
         $mageHelp = '
@@ -137,8 +141,9 @@ class MageRootRequireCommand extends ExtendableRequireCommand
         if ($fileParsed !== 0) {
             return $fileParsed;
         }
-        $didUpdate = false;
 
+        $updater = null;
+        $didUpdate = false;
         $package = null;
         $constraint = null;
         $requires = $input->getArgument('packages');
@@ -228,27 +233,13 @@ class MageRootRequireCommand extends ExtendableRequireCommand
      */
     protected function runUpdate($updater, $input, $targetEdition, $targetConstraint)
     {
-        $overrideOriginal = $input->getOption(static::PREVIOUS_PACKAGE_OPT);
-        $overrideOriginalEdition = null;
-        $overrideOriginalVersion = null;
-        if ($overrideOriginal && $overrideOriginal != static::PREV_OPT_HINT) {
-            $parser = new VersionParser();
-            $requirement = $parser->parseNameVersionPairs([$overrideOriginal]);
-            $opt = '--' . static::PREVIOUS_PACKAGE_OPT;
-            if (count($requirement) !== 1) {
-                throw new InvalidOptionException("'$opt' accepts exactly one package requirement");
-            } elseif (count($requirement[0]) !== 2) {
-                throw new InvalidOptionException("'$opt' requires both a package and version");
-            }
-            $requirement = $requirement[0];
-            $name = $requirement['name'];
-            $overrideOriginalEdition = PackageUtils::getMagentoProductEdition($name);
-            if (!$overrideOriginalEdition) {
-                throw new InvalidOptionException("'$opt' accepts only Magento product packages; \"$name\" given");
-            }
-            $overrideOriginalVersion = $requirement['version'];
-            if (!PackageUtils::isConstraintStrict($overrideOriginalVersion)) {
-                throw new InvalidOptionException("'$opt' does not accept non-strict version constraints");
+        $overrideOriginalEdition = $input->getOption(static::BASE_EDITION_OPT);
+        $overrideOriginalVersion = $input->getOption(static::BASE_VERSION_OPT);
+        if ($overrideOriginalEdition) {
+            $overrideOriginalEdition = strtolower($overrideOriginalEdition);
+            if ($overrideOriginalEdition !== 'community' && $overrideOriginalEdition !== 'enterprise') {
+                $opt = '--' . static::BASE_EDITION_OPT;
+                throw new InvalidOptionException("'$opt' accepts only 'community' or 'enterprise'");
             }
         }
 

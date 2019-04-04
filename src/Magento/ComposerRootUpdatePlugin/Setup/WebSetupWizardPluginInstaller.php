@@ -18,9 +18,9 @@ use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Plugin\PluginDefinition;
 
 /**
- * Class WebSetupWizardPluginInstaller
+ * Handles plugin installation in the `var` directory, where it needs to be present for the Web Setup Wizard
  */
-abstract class WebSetupWizardPluginInstaller
+class WebSetupWizardPluginInstaller
 {
     /**
      * Process a package event and look for changes in the plugin package version
