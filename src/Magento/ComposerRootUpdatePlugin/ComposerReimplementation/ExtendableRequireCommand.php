@@ -40,7 +40,7 @@ abstract class ExtendableRequireCommand extends RequireCommand
     protected $mageNewlyCreated;
 
     /**
-     * @var bool|string $mageComposerBackup
+     * @var boolean|string $mageComposerBackup
      */
     protected $mageComposerBackup;
 

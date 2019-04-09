@@ -15,6 +15,7 @@ use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;;
 use Magento\ComposerRootUpdatePlugin\Setup\WebSetupWizardPluginInstaller;
+use Magento\ComposerRootUpdatePlugin\Utils\Console;
 
 /**
  * Class PluginDefinition
@@ -62,7 +63,8 @@ class PluginDefinition implements PluginInterface, Capable, EventSubscriberInter
     {
         // Safeguard against the source file being removed before the event is triggered
         if (class_exists('\Magento\ComposerRootUpdatePlugin\Setup\WebSetupWizardPluginInstaller')) {
-            WebSetupWizardPluginInstaller::packageEvent($event);
+            $setupWizardInstaller = new WebSetupWizardPluginInstaller(new Console($event->getIO()));
+            $setupWizardInstaller->packageEvent($event);
         }
     }
 }

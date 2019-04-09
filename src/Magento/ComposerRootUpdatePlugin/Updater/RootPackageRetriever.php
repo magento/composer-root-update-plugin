@@ -28,6 +28,11 @@ class RootPackageRetriever
     const MISSING_ROOT_LABEL = '(unknown Magento root)';
 
     /**
+     * @var Console $console
+     */
+    protected $console;
+
+    /**
      * @var Composer $composer
      */
     protected $composer;
@@ -38,7 +43,7 @@ class RootPackageRetriever
     protected $originalRootPackage;
 
     /**
-     * @var bool $fetchedOriginal
+     * @var boolean $fetchedOriginal
      */
     protected $fetchedOriginal;
 
@@ -48,7 +53,7 @@ class RootPackageRetriever
     protected $targetRootPackage;
 
     /**
-     * @var bool $fetchedTarget
+     * @var boolean $fetchedTarget
      */
     protected $fetchedTarget;
 
@@ -90,6 +95,7 @@ class RootPackageRetriever
     /**
      * RootPackageRetriever constructor.
      *
+     * @param Console $console
      * @param Composer $composer
      * @param string $targetEdition
      * @param string $targetConstraint
@@ -97,12 +103,14 @@ class RootPackageRetriever
      * @param string $overrideOriginalVersion
      */
     public function __construct(
+        $console,
         $composer,
         $targetEdition,
         $targetConstraint,
         $overrideOriginalEdition = null,
         $overrideOriginalVersion = null
     ) {
+        $this->console = $console;
         $this->composer = $composer;
 
         $this->originalRootPackage = null;
@@ -123,7 +131,7 @@ class RootPackageRetriever
     /**
      * Get the project package that should be used as the basis for Magento root comparisons
      *
-     * @param bool $overrideOption
+     * @param boolean $overrideOption
      * @return PackageInterface|boolean
      */
     public function getOriginalRootPackage($overrideOption)
@@ -142,9 +150,9 @@ class RootPackageRetriever
 
         if (!$originalRootPackage) {
             if (!$originalEdition || !$originalVersion) {
-                Console::warning('No Magento product package was found in the current installation.');
+                $this->console->warning('No Magento product package was found in the current installation.');
             } else {
-                Console::warning('The Magento project package corresponding to the currently installed ' .
+                $this->console->warning('The Magento project package corresponding to the currently installed ' .
                     "\"magento/product-$originalEdition-edition: $prettyOriginalVersion\" package is unavailable.");
             }
 
@@ -152,7 +160,7 @@ class RootPackageRetriever
             if (!$overrideRoot) {
                 $question = 'Would you like to update the root composer.json file anyway? ' .
                     'This will override any changes you have made to the default composer.json file.';
-                $overrideRoot = Console::ask($question);
+                $overrideRoot = $this->console->ask($question);
             }
 
             if ($overrideRoot) {
@@ -209,7 +217,7 @@ class RootPackageRetriever
      * @param boolean $ignorePlatformReqs
      * @param string $phpVersion
      * @param string $preferredStability
-     * @return PackageInterface|bool Best root package candidate or false if no valid packages found
+     * @return PackageInterface|boolean Best root package candidate or false if no valid packages found
      */
     protected function fetchMageRootFromRepo(
         $edition,
@@ -231,7 +239,7 @@ class RootPackageRetriever
         $stability = key_exists($packageName, $stabilityFlags)
             ? array_search($stabilityFlags[$packageName], BasePackage::$stabilities)
             : $minStability;
-        Console::comment("Minimum stability for \"$packageName: $constraint\": $stability", IOInterface::DEBUG);
+        $this->console->comment("Minimum stability for \"$packageName: $constraint\": $stability", IOInterface::DEBUG);
         $pool = new Pool(
             $stability,
             $stabilityFlags,
@@ -241,7 +249,7 @@ class RootPackageRetriever
         $pool->addRepository($repos);
 
         if (!PackageUtils::isConstraintStrict($constraint)) {
-            Console::warning(
+            $this->console->warning(
                 "The version constraint \"magento/product-$edition-edition: $constraint\" is not exact; " .
                 'the Magento root updater might not accurately determine the version to use according to other ' .
                 'requirements in this installation. It is recommended to use an exact version number.'
@@ -258,7 +266,7 @@ class RootPackageRetriever
             if ($phpVersion) {
                 $err = "$err for PHP version $phpVersion";
             }
-            Console::error($err);
+            $this->console->error($err);
         }
 
         return $result;
@@ -273,7 +281,7 @@ class RootPackageRetriever
     {
         $locker = $this->getRootLocker();
         if (!$locker || !$locker->isLocked()) {
-            Console::labeledVerbose(
+            $this->console->labeledVerbose(
                 'No composer.lock file was found in the root project to check for the installed Magento version'
             );
             return;
@@ -318,7 +326,7 @@ class RootPackageRetriever
             $parentDir = preg_replace('/\/var\/composer\.json$/', '', $composerPath);
             if (file_exists("$parentDir/composer.json") && file_exists("$parentDir/composer.lock")) {
                 $locker = new Locker(
-                    Console::getIO(),
+                    $this->console->getIO(),
                     new JsonFile("$parentDir/composer.lock"),
                     $composer->getRepositoryManager(),
                     $composer->getInstallationManager(),
