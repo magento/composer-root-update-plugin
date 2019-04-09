@@ -25,7 +25,12 @@ class DeltaResolver
     const CHANGE_VAL = 'change_value';
 
     /**
-     * @var bool $overrideUserValues
+     * @var Console $console
+     */
+    protected $console;
+    
+    /**
+     * @var boolean $overrideUserValues
      */
     protected $overrideUserValues;
 
@@ -57,12 +62,14 @@ class DeltaResolver
     /**
      * DeltaResolver constructor.
      *
+     * @param Console $console
      * @param boolean $overrideUserValues
      * @param RootPackageRetriever $retriever
      * @return void
      */
-    public function __construct($overrideUserValues, $retriever)
+    public function __construct($console, $overrideUserValues, $retriever)
     {
+        $this->console = $console;
         $this->overrideUserValues = $overrideUserValues;
         $this->retriever = $retriever;
         $this->originalMageRootPackage = $retriever->getOriginalRootPackage($overrideUserValues);
@@ -184,14 +191,14 @@ class DeltaResolver
 
             $shouldOverride = $this->overrideUserValues;
             if ($this->overrideUserValues) {
-                Console::log($conflictDesc);
-                Console::log("Overriding local changes due to --" . MageRootRequireCommand::OVERRIDE_OPT . '.');
+                $this->console->log($conflictDesc);
+                $this->console->log("Overriding local changes due to --" . MageRootRequireCommand::OVERRIDE_OPT . '.');
             } else {
-                $shouldOverride = Console::ask("$conflictDesc.\nWould you like to override the local changes?");
+                $shouldOverride = $this->console->ask("$conflictDesc.\nWould you like to override the local changes?");
             }
 
             if (!$shouldOverride) {
-                Console::comment("$conflictDesc and will not be changed.  Re-run using " .
+                $this->console->comment("$conflictDesc and will not be changed.  Re-run using " .
                     '--' . MageRootRequireCommand::OVERRIDE_OPT . ' or --' . MageRootRequireCommand::INTERACTIVE_OPT .
                     ' to override with Magento values.');
                 $action = null;
@@ -265,11 +272,11 @@ class DeltaResolver
                 $newVal = $adds[$package]->getConstraint()->getPrettyString();
                 return "$package=$newVal";
             }, array_keys($adds));
-            Console::labeledVerbose("Adding $section constraints: " . implode(', ', $prettyAdds));
+            $this->console->labeledVerbose("Adding $section constraints: " . implode(', ', $prettyAdds));
         }
         if ($removes !== []) {
             $changed = true;
-            Console::labeledVerbose("Removing $section entries: " . implode(', ', $removes));
+            $this->console->labeledVerbose("Removing $section entries: " . implode(', ', $removes));
         }
         if ($changes !== []) {
             $changed = true;
@@ -277,7 +284,7 @@ class DeltaResolver
                 $newVal = $changes[$package]->getConstraint()->getPrettyString();
                 return "$package=$newVal";
             }, array_keys($changes));
-            Console::labeledVerbose("Updating $section constraints: " . implode(', ', $prettyChanges));
+            $this->console->labeledVerbose("Updating $section constraints: " . implode(', ', $prettyChanges));
         }
 
         if ($changed) {
@@ -414,14 +421,14 @@ class DeltaResolver
             $flatAdds = array_diff(array_diff($targetMageFlatPart, $originalMageFlatPart), $flatResult);
             if ($flatAdds !== []) {
                 $valChanged = true;
-                Console::labeledVerbose("Adding $field entries: " . implode(', ', $flatAdds));
+                $this->console->labeledVerbose("Adding $field entries: " . implode(', ', $flatAdds));
                 $flatResult = array_unique(array_merge($flatResult, $flatAdds));
             }
 
             $flatRemoves = array_intersect(array_diff($originalMageFlatPart, $targetMageFlatPart), $flatResult);
             if ($flatRemoves !== []) {
                 $valChanged = true;
-                Console::labeledVerbose("Removing $field entries: " . implode(', ', $flatRemoves));
+                $this->console->labeledVerbose("Removing $field entries: " . implode(', ', $flatRemoves));
                 $flatResult = array_diff($flatResult, $flatRemoves);
             }
 
@@ -432,15 +439,15 @@ class DeltaResolver
             $prettyTargetMageVal = json_encode($targetMageVal, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             if ($action == static::ADD_VAL) {
                 $valChanged = true;
-                Console::labeledVerbose("Adding $field entry: $prettyTargetMageVal");
+                $this->console->labeledVerbose("Adding $field entry: $prettyTargetMageVal");
                 $result = $targetMageVal;
             } elseif ($action == static::CHANGE_VAL) {
                 $valChanged = true;
-                Console::labeledVerbose("Updating $field entry: $prettyTargetMageVal");
+                $this->console->labeledVerbose("Updating $field entry: $prettyTargetMageVal");
                 $result = $targetMageVal;
             } elseif ($action == static::REMOVE_VAL) {
                 $valChanged = true;
-                Console::labeledVerbose("Removing $field entry");
+                $this->console->labeledVerbose("Removing $field entry");
                 $result = null;
             }
         }

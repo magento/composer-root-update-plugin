@@ -18,6 +18,11 @@ use Magento\ComposerRootUpdatePlugin\Plugin\PluginDefinition;
 class MagentoRootUpdater
 {
     /**
+     * @var Console $console
+     */
+    protected $console;
+    
+    /**
      * @var Composer $composer
      */
     protected $composer;
@@ -30,11 +35,13 @@ class MagentoRootUpdater
     /**
      * MagentoRootUpdater constructor.
      *
+     * @param Console $console
      * @param Composer $composer
      * @return void
      */
-    public function __construct($composer)
+    public function __construct($console, $composer)
     {
+        $this->console = $console;
         $this->composer = $composer;
         $this->jsonChanges = [];
     }
@@ -73,23 +80,23 @@ class MagentoRootUpdater
         }
 
         if ($originalEdition == $retriever->getTargetEdition() && $originalVersion == $retriever->getTargetVersion()) {
-            Console::labeledVerbose(
+            $this->console->labeledVerbose(
                 'The Magento product requirement matched the current installation; no root updates are required'
             );
             return false;
         }
 
         if (!$retriever->getOriginalRootPackage($overrideOption)) {
-            Console::log('Skipping Magento composer.json update.');
+            $this->console->log('Skipping Magento composer.json update.');
             return false;
         }
 
-        Console::setVerboseLabel($retriever->getTargetLabel());
-        Console::labeledVerbose(
+        $this->console->setVerboseLabel($retriever->getTargetLabel());
+        $this->console->labeledVerbose(
             "Base Magento project package version: magento/project-$originalEdition-edition $prettyOriginalVersion"
         );
 
-        $resolver = new DeltaResolver($overrideOption, $retriever);
+        $resolver = new DeltaResolver($this->console, $overrideOption, $retriever);
 
         $jsonChanges = $resolver->resolveRootDeltas();
 
@@ -128,7 +135,7 @@ class MagentoRootUpdater
             }
         }
 
-        Console::labeledVerbose('Writing changes to the root composer.json...');
+        $this->console->labeledVerbose('Writing changes to the root composer.json...');
 
         $retVal = file_put_contents(
             $filePath,
@@ -138,7 +145,7 @@ class MagentoRootUpdater
         if ($retVal === false) {
             throw new FilesystemException('Failed to write updated Magento root values to ' . $filePath);
         }
-        Console::labeledVerbose("$filePath has been updated");
+        $this->console->labeledVerbose("$filePath has been updated");
     }
 
     /**

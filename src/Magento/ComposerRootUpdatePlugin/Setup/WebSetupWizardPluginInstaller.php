@@ -23,14 +23,29 @@ use Magento\ComposerRootUpdatePlugin\Plugin\PluginDefinition;
 class WebSetupWizardPluginInstaller
 {
     /**
+     * @var Console $console
+     */
+    protected $console;
+    
+    /**
+     * WebSetupWizardPluginInstaller constructor.
+     *
+     * @param Console $console
+     * @return void
+     */
+    public function __construct($console)
+    {
+        $this->console = $console;
+    }
+
+    /**
      * Process a package event and look for changes in the plugin package version
      *
      * @param PackageEvent $event
      * @return void
      */
-    public static function packageEvent($event)
+    public function packageEvent($event)
     {
-        Console::setIO($event->getIO());
         $jobs = $event->getRequest()->getJobs();
         $packageName = PluginDefinition::PACKAGE_NAME;
         foreach ($jobs as $job) {
@@ -40,13 +55,13 @@ class WebSetupWizardPluginInstaller
                     $version = $pkg->getPrettyVersion();
                     try {
                         $composer = $event->getComposer();
-                        static::updateSetupWizardPlugin(
+                        $this->updateSetupWizardPlugin(
                             $composer,
                             $composer->getConfig()->getConfigSource()->getName(),
                             $version
                         );
                     } catch (Exception $e) {
-                        Console::error("Web Setup Wizard installation of \"$packageName: $version\" failed.", $e);
+                        $this->console->error("Web Setup Wizard installation of \"$packageName: $version\" failed", $e);
                     }
                     break;
                 }
@@ -62,37 +77,40 @@ class WebSetupWizardPluginInstaller
      *
      * @return int 0 if successful, 1 if failed
      */
-    public static function doVarInstall()
+    public function doVarInstall()
     {
         $packageName = PluginDefinition::PACKAGE_NAME;
         $rootDir = getcwd();
         $path = "$rootDir/composer.json";
         if (!file_exists($path)) {
-            Console::error("Web Setup Wizard installation of \"$packageName\" failed; unable to load $path.");
+            $this->console->error("Web Setup Wizard installation of \"$packageName\" failed; unable to load $path.");
             return 1;
         }
 
         $factory = new Factory();
-        $composer = $factory->createComposer(Console::getIO(), $path, true, null, true);
+        $composer = $factory->createComposer($this->console->getIO(), $path, true, null, true);
         $locker = $composer->getLocker();
         if ($locker->isLocked()) {
             $pkg = $locker->getLockedRepository()->findPackage(PluginDefinition::PACKAGE_NAME, '*');
             if ($pkg !== null) {
                 $version = $pkg->getPrettyVersion();
                 try {
-                    Console::log("Checking for \"$packageName: $version\" for the Web Setup Wizard...", Console::VERBOSE);
-                    static::updateSetupWizardPlugin($composer, $path, $version);
+                    $this->console->log(
+                        "Checking for \"$packageName: $version\" for the Web Setup Wizard...",
+                        Console::VERBOSE
+                    );
+                    $this->updateSetupWizardPlugin($composer, $path, $version);
                 } catch (Exception $e) {
-                    Console::error("Web Setup Wizard installation of \"$packageName: $version\" failed.", $e);
+                    $this->console->error("Web Setup Wizard installation of \"$packageName: $version\" failed.", $e);
                     return 1;
                 }
             } else {
-                Console::error("Web Setup Wizard installation of \"$packageName\" failed; " .
+                $this->console->error("Web Setup Wizard installation of \"$packageName\" failed; " .
                     "package not found in $rootDir/composer.lock.");
                 return 1;
             }
         } else {
-            Console::error("Web Setup Wizard installation of \"$packageName\" failed; " .
+            $this->console->error("Web Setup Wizard installation of \"$packageName\" failed; " .
                 "unable to load $rootDir/composer.lock.");
             return 1;
         }
@@ -108,7 +126,7 @@ class WebSetupWizardPluginInstaller
      * @return boolean
      * @throws Exception
      */
-    public static function updateSetupWizardPlugin($composer, $filePath, $pluginVersion)
+    public function updateSetupWizardPlugin($composer, $filePath, $pluginVersion)
     {
         $packageName = PluginDefinition::PACKAGE_NAME;
 
@@ -124,7 +142,7 @@ class WebSetupWizardPluginInstaller
         $var = "$rootDir/var";
         if (file_exists("$var/vendor/$packageName/composer.json")) {
             $varPluginComposer = (new Factory())->createComposer(
-                Console::getIO(),
+                $this->console->getIO(),
                 "$var/vendor/$packageName/composer.json",
                 true,
                 "$var/vendor/$packageName",
@@ -133,7 +151,7 @@ class WebSetupWizardPluginInstaller
 
             // If the current version of the plugin is already the version in this update, noop
             if ($varPluginComposer->getPackage()->getPrettyVersion() == $pluginVersion) {
-                Console::log(
+                $this->console->log(
                     "No Web Setup Wizard update needed for $packageName; version $pluginVersion is already in $var.",
                     Console::VERBOSE
                 );
@@ -141,7 +159,7 @@ class WebSetupWizardPluginInstaller
             }
         }
 
-        Console::info("Installing \"$packageName: $pluginVersion\" for the Web Setup Wizard");
+        $this->console->info("Installing \"$packageName: $pluginVersion\" for the Web Setup Wizard");
 
         if (!file_exists($var)) {
             mkdir($var);
@@ -158,8 +176,8 @@ class WebSetupWizardPluginInstaller
             unlink($tmpDir);
             mkdir($tmpDir);
 
-            $tmpComposer = static::createPluginComposer($tmpDir, $pluginVersion, $composer);
-            $install = Installer::create(Console::getIO(), $tmpComposer);
+            $tmpComposer = $this->createPluginComposer($tmpDir, $pluginVersion, $composer);
+            $install = Installer::create($this->console->getIO(), $tmpComposer);
             $install
                 ->setDumpAutoloader(true)
                 ->setRunScripts(false)
@@ -167,12 +185,12 @@ class WebSetupWizardPluginInstaller
                 ->disablePlugins();
             $install->run();
 
-            static::copyAndReplace("$tmpDir/vendor", "$var/vendor");
+            $this->copyAndReplace("$tmpDir/vendor", "$var/vendor");
         } catch (Exception $e) {
             $exception = $e;
         }
 
-        static::deletePath($tmpDir);
+        $this->deletePath($tmpDir);
 
         if ($exception !== null) {
             throw $exception;
@@ -188,7 +206,7 @@ class WebSetupWizardPluginInstaller
      * @return void
      * @throws FilesystemException
      */
-    private static function deletePath($path)
+    private function deletePath($path)
     {
         if (!file_exists($path)) {
             return;
@@ -196,7 +214,7 @@ class WebSetupWizardPluginInstaller
         if (!is_link($path) && is_dir($path)) {
             $files = array_diff(scandir($path), ['..', '.']);
             foreach ($files as $file) {
-                static::deletePath("$path/$file");
+                $this->deletePath("$path/$file");
             }
             rmdir($path);
         } else {
@@ -215,14 +233,14 @@ class WebSetupWizardPluginInstaller
      * @return void
      * @throws FilesystemException
      */
-    private static function copyAndReplace($source, $target)
+    private function copyAndReplace($source, $target)
     {
-        static::deletePath($target);
+        $this->deletePath($target);
         if (is_dir($source)) {
             mkdir($target);
             $files = array_diff(scandir($source), ['..', '.']);
             foreach ($files as $file) {
-                static::copyAndReplace("$source/$file", "$target/$file");
+                $this->copyAndReplace("$source/$file", "$target/$file");
             }
         } else {
             copy($source, $target);
@@ -238,7 +256,7 @@ class WebSetupWizardPluginInstaller
      * @return Composer
      * @throws Exception
      */
-    private static function createPluginComposer($tmpDir, $pluginVersion, $rootComposer)
+    private function createPluginComposer($tmpDir, $pluginVersion, $rootComposer)
     {
         $factory = new Factory();
         $tmpConfig = [
@@ -251,7 +269,7 @@ class WebSetupWizardPluginInstaller
         }
         $tmpJson = new JsonFile("$tmpDir/composer.json");
         $tmpJson->write($tmpConfig);
-        $tmpComposer = $factory->createComposer(Console::getIO(), "$tmpDir/composer.json", true, $tmpDir);
+        $tmpComposer = $factory->createComposer($this->console->getIO(), "$tmpDir/composer.json", true, $tmpDir);
         $tmpConfig = $tmpComposer->getConfig();
         $tmpConfig->setAuthConfigSource($rootComposer->getConfig()->getAuthConfigSource());
         $tmpComposer->setConfig($tmpConfig);

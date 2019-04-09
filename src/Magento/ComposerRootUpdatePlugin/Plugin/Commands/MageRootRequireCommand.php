@@ -40,7 +40,12 @@ class MageRootRequireCommand extends ExtendableRequireCommand
     /**
      * @var RootPackageRetriever $retriever
      */
-    private $retriever;
+    protected $retriever;
+
+    /**
+     * @var Console $console
+     */
+    protected $console;
 
     /**
      * Call the parent setApplication method but also change the command's name to update
@@ -55,7 +60,6 @@ class MageRootRequireCommand extends ExtendableRequireCommand
         // added to the command registry
         $this->setName($this->commandName);
         parent::setApplication($application);
-        Console::setIO($this->getIO());
     }
 
     /**
@@ -136,7 +140,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
     public function execute(InputInterface $input, OutputInterface $output)
     {
         $updater = null;
-        Console::setIO($this->getIO());
+        $this->console = new Console($this->getIO(), $input->getOption(static::INTERACTIVE_OPT));
         $fileParsed = $this->parseComposerJsonFile($input);
         if ($fileParsed !== 0) {
             return $fileParsed;
@@ -167,12 +171,12 @@ class MageRootRequireCommand extends ExtendableRequireCommand
 
                     // Found a Magento product in the command arguments; try to run the updater
                     try {
-                        $updater = new MagentoRootUpdater($this->getComposer());
+                        $updater = new MagentoRootUpdater($this->console, $this->getComposer());
                         $didUpdate = $this->runUpdate($updater, $input, $edition, $constraint);
                     } catch (\Exception $e) {
                         $label = 'Magento ' . ucfirst($edition) . " Edition $constraint";
                         $this->revertMageComposerFile("Update of composer.json with $label changes failed");
-                        Console::log($e->getMessage());
+                        $this->console->log($e->getMessage());
                         $didUpdate = false;
                     }
 
@@ -183,12 +187,12 @@ class MageRootRequireCommand extends ExtendableRequireCommand
             if ($didUpdate) {
                 // Update composer.json before the native execute(), as it reads the file instead of an in-memory object
                 $label = $this->retriever->getTargetLabel();
-                Console::info("Updating composer.json for $label ...");
+                $this->console->info("Updating composer.json for $label ...");
                 try {
                     $updater->writeUpdatedComposerJson();
                 } catch (\Exception $e) {
                     $this->revertMageComposerFile("Update of composer.json with $label changes failed");
-                    Console::log($e->getMessage());
+                    $this->console->log($e->getMessage());
                     $didUpdate = false;
                 }
             }
@@ -207,7 +211,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
             // If the native execute() didn't succeed, revert the Magento changes to the composer.json file
             $this->revertMageComposerFile('The native \'composer ' . $this->commandName . '\' command failed');
             if ($constraint && !PackageUtils::isConstraintStrict($constraint)) {
-                Console::comment(
+                $this->console->comment(
                     "Recommended: Use a specific Magento version constraint instead of \"$package: $constraint\""
                 );
             }
@@ -243,8 +247,8 @@ class MageRootRequireCommand extends ExtendableRequireCommand
             }
         }
 
-        Console::setInteractive($input->getOption(static::INTERACTIVE_OPT));
         $this->retriever = new RootPackageRetriever(
+            $this->console,
             $this->getComposer(),
             $targetEdition,
             $targetConstraint,

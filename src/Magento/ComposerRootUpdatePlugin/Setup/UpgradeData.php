@@ -6,9 +6,19 @@
 
 namespace Magento\ComposerRootUpdatePlugin\Setup;
 
+use Composer\IO\ConsoleIO;
+use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\UpgradeDataInterface;
+use Symfony\Component\Console\Helper\DebugFormatterHelper;
+use Symfony\Component\Console\Helper\FormatterHelper;
+use Symfony\Component\Console\Helper\HelperSet;
+use Symfony\Component\Console\Helper\ProcessHelper;
+use Symfony\Component\Console\Helper\QuestionHelper;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Magento module hook to attach plugin installation functionality to `magento setup` operations
@@ -24,6 +34,16 @@ class UpgradeData implements UpgradeDataInterface
      */
     public function upgrade(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
     {
-        WebSetupWizardPluginInstaller::doVarInstall();
+        $io = new ConsoleIO(new ArrayInput([]),
+            new ConsoleOutput(OutputInterface::VERBOSITY_DEBUG),
+            new HelperSet([
+                new FormatterHelper(),
+                new DebugFormatterHelper(),
+                new ProcessHelper(),
+                new QuestionHelper()
+            ])
+        );
+        $setupWizardInstaller = new WebSetupWizardPluginInstaller(new Console($io));
+        $setupWizardInstaller->doVarInstall();
     }
 }

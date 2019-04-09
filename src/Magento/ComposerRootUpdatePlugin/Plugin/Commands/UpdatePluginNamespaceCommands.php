@@ -23,11 +23,16 @@ class UpdatePluginNamespaceCommands extends BaseCommand
     const NAME = 'magento-update-plugin';
 
     /**
+     * @var Console $console
+     */
+    protected $console;
+
+    /**
      * Map of operation command to description
      *
      * @var array $operations
      */
-    private static $operations = [
+    protected static $operations = [
         'list' =>
             "List all operations available in the <comment>%command.name%</comment> namespace. This is equivalent\n".
             'to running <comment>%command.full_name%</comment> without an operation.',
@@ -61,16 +66,17 @@ class UpdatePluginNamespaceCommands extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->console = new Console($this->getIO());
         $operation = $input->getArgument('operation');
-        Console::setIO($this->getIO());
         if (empty($operation) || $operation == 'list') {
-            Console::log(static::describeOperations() . "\n");
+            $this->console->log(static::describeOperations() . "\n");
             return 0;
         }
         if ($operation == 'install') {
-            return WebSetupWizardPluginInstaller::doVarInstall();
+            $setupWizardInstaller = new WebSetupWizardPluginInstaller($this->console);
+            return $setupWizardInstaller->doVarInstall();
         } else {
-            Console::error("'$operation' is not a supported operation for ".static::NAME);
+            $this->console->error("'$operation' is not a supported operation for ".static::NAME);
             return 1;
         }
     }

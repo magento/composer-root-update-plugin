@@ -6,16 +6,8 @@
 
 namespace Magento\ComposerRootUpdatePlugin\Utils;
 
-use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
-use Symfony\Component\Console\Helper\DebugFormatterHelper;
-use Symfony\Component\Console\Helper\FormatterHelper;
-use Symfony\Component\Console\Helper\HelperSet;
-use Symfony\Component\Console\Helper\ProcessHelper;
-use Symfony\Component\Console\Helper\QuestionHelper;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\OutputInterface;
+use Composer\IO\NullIO;
 
 /**
  * Singleton logger with console interaction methods
@@ -42,81 +34,78 @@ class Console
     /**
      * @var IOInterface $io
      */
-    static protected $io = null;
+    protected $io;
 
     /**
      * @var string $verboseLabel
      */
-    static protected $verboseLabel = null;
+    protected $verboseLabel;
 
     /**
-     * @var bool $interactive
+     * @var boolean $interactive
      */
-    static protected $interactive = false;
+    protected $interactive;
 
     /**
-     * Get the shared IOInterface instance or a default ConsoleIO if one hasn't been set via setIO()
+     * Console constructor.
      *
-     * @return IOInterface
+     * @param IOInterface $io
+     * @param boolean $interactive
+     * @param string $verboseLabel
+     * @return void
      */
-    static public function getIO()
+    public function __construct($io, $interactive = false, $verboseLabel = null)
     {
-        if (static::$io == null) {
-            static::$io = new ConsoleIO(new ArrayInput([]),
-                new ConsoleOutput(OutputInterface::VERBOSITY_DEBUG),
-                new HelperSet([
-                    new FormatterHelper(),
-                    new DebugFormatterHelper(),
-                    new ProcessHelper(),
-                    new QuestionHelper()
-                ])
-            );
+        if ($io === null) {
+            $this->io = new NullIO();
+        } else {
+            $this->io = $io;
         }
-        return static::$io;
+        $this->verboseLabel = $verboseLabel;
+        $this->interactive = $interactive;
     }
 
     /**
-     * Set the shared IOInterface instance
+     * Get the Composer IOInterface instance
      *
-     * @param IOInterface $io
-     * @return void
+     * @return IOInterface
      */
-    static public function setIO($io)
+    public function getIO()
     {
-        static::$io = $io;
+        return $this->io;
     }
 
     /**
      * Whether or not ask() should interactively ask the question or just return the default value
      *
-     * @param bool $interactive
+     * @param boolean $interactive
      * @return void
      */
-    public static function setInteractive($interactive)
+    public function setInteractive($interactive)
     {
-        self::$interactive = $interactive;
+        $this->interactive = $interactive;
     }
 
     /**
      * Ask the user a yes or no question and return the result
      *
-     * If setInteractive(false) has been called, instead do not ask and just return the default
+     * If the console is not interactive, instead do not ask and just return the default
      *
      * @param string $question
      * @param boolean $default
      * @return boolean
      */
-    static public function ask($question, $default = false)
+    public function ask($question, $default = false)
     {
         $result = $default;
-        if (static::$interactive) {
-            if (!static::getIO()->isInteractive()) {
+        if ($this->interactive) {
+            if (!$this->getIO()->isInteractive()) {
                 throw new \InvalidArgumentException(
                     'Interactive options cannot be used in non-interactive terminals.'
                 );
             }
             $opts = $default ? 'Y,n' : 'y,N';
-            $result = static::getIO()->askConfirmation("<info>$question</info> [<comment>$opts</comment>]? ", $default);
+            $result = $this->getIO()->askConfirmation("<info>$question</info> [<comment>$opts</comment>]? ", $default);
         }
         return $result;
     }
@@ -129,13 +118,13 @@ class Console
      * @param string $format
      * @return void
      */
-    static public function log($message, $verbosity = Console::NORMAL, $format = null)
+    public function log($message, $verbosity = Console::NORMAL, $format = null)
     {
         if ($format) {
             $formatClose = str_replace('<', '</', $format);
             $message = "${format}${message}${formatClose}";
         }
-        static::getIO()->writeError($message, true, $verbosity);
+        $this->getIO()->writeError($message, true, $verbosity);
     }
 
     /**
@@ -145,9 +134,9 @@ class Console
      * @param int $verbosity
      * @return void
      */
-    static public function info($message, $verbosity = Console::NORMAL)
+    public function info($message, $verbosity = Console::NORMAL)
     {
-        static::log($message, $verbosity, static::FORMAT_INFO);
+        $this->log($message, $verbosity, static::FORMAT_INFO);
     }
 
     /**
@@ -157,9 +146,9 @@ class Console
      * @param int $verbosity
      * @return void
      */
-    static public function comment($message, $verbosity = Console::NORMAL)
+    public function comment($message, $verbosity = Console::NORMAL)
     {
-        static::log($message, $verbosity, static::FORMAT_COMMENT);
+        $this->log($message, $verbosity, static::FORMAT_COMMENT);
     }
 
     /**
@@ -169,9 +158,9 @@ class Console
      * @param int $verbosity
      * @return void
      */
-    static public function warning($message, $verbosity = Console::NORMAL)
+    public function warning($message, $verbosity = Console::NORMAL)
     {
-        static::log($message, $verbosity, static::FORMAT_WARN);
+        $this->log($message, $verbosity, static::FORMAT_WARN);
     }
 
     /**
@@ -185,7 +174,7 @@ class Console
      * @param string $format
      * @return void
      */
-    static public function labeledVerbose(
+    public function labeledVerbose(
         $message,
         $label = null,
         $verbosity = Console::VERBOSE,
@@ -196,12 +185,12 @@ class Console
             $message = "${format}${message}${formatClose}";
         }
         if ($label === null) {
-            $label = static::$verboseLabel;
+            $label = $this->verboseLabel;
         }
         if ($label) {
             $message = " <comment>[</comment>$label<comment>]</comment> $message";
         }
-        static::log($message, $verbosity);
+        $this->log($message, $verbosity);
     }
 
     /**
@@ -211,22 +200,22 @@ class Console
      * @param \Exception $exception
      * @return void
      */
-    static public function error($message, $exception = null)
+    public function error($message, $exception = null)
     {
-        static::log($message, static::QUIET, static::FORMAT_ERROR);
+        $this->log($message, static::QUIET, static::FORMAT_ERROR);
         if ($exception) {
-            static::log($exception->getMessage());
+            $this->log($exception->getMessage());
         }
     }
 
     /**
-     * Sets the label to apply to logVerbose() messages if not overridden
+     * Sets the label to apply to labeledVerbose() messages if not overridden
      *
      * @param string $verboseLabel
      * @return void
      */
-    static public function setVerboseLabel($verboseLabel)
+    public function setVerboseLabel($verboseLabel)
     {
-        static::$verboseLabel = $verboseLabel;
+        $this->verboseLabel = $verboseLabel;
     }
 }

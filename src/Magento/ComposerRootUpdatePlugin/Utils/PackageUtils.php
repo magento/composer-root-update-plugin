@@ -79,7 +79,7 @@ class PackageUtils
      * Is the given constraint strict or does it allow multiple versions
      *
      * @param string $constraint
-     * @return bool
+     * @return boolean
      */
     static public function isConstraintStrict($constraint)
     {

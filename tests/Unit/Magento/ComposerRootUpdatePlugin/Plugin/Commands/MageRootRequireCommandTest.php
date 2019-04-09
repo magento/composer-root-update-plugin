@@ -17,13 +17,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MageRootRequireCommandTest extends UpdatePluginTestCase
 {
-    /** @var TestApplication */
+    /**
+     * @var TestApplication
+     */
     public $application;
 
-    /** @var MageRootRequireCommand */
+    /**
+     * @var MageRootRequireCommand
+     */
     public $command;
 
-    /** @var MockObject|InputInterface */
+    /**
+     * @var MockObject|InputInterface
+     */
     public $input;
 
     public function testOverwriteRequireCommand()

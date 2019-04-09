@@ -34,6 +34,11 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     public $io;
 
     /**
+     * @var Console $console
+     */
+    public $console;
+
+    /**
      * @var MockObject|PackageInterface $originalRoot
      */
     public $originalRoot;
@@ -57,7 +62,14 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     {
         $this->composer->expects($this->never())->method('getLocker');
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0', 'community', '1.0.0');
+        $retriever = new RootPackageRetriever(
+            $this->console,
+            $this->composer,
+            'enterprise',
+            '2.0.0',
+            'community',
+            '1.0.0'
+        );
 
         $this->assertEquals('community', $retriever->getOriginalEdition());
         $this->assertEquals('1.0.0', $retriever->getOriginalVersion());
@@ -68,7 +80,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     {
         $this->composer->expects($this->once())->method('getLocker');
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
 
         $this->assertEquals('enterprise', $retriever->getOriginalEdition());
         $this->assertEquals('1.1.0.0', $retriever->getOriginalVersion());
@@ -79,7 +91,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     {
         $this->repo->method('whatProvides')->willReturn(['1.1.0.0' => $this->originalRoot, '2.0.0.0' => $this->targetRoot]);
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedOriginal = $retriever->getOriginalRootPackage(false);
 
         $this->assertEquals($this->originalRoot, $retrievedOriginal);
@@ -89,7 +101,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     {
         $this->repo->method('whatProvides')->willReturn(['2.0.0.0' => $this->targetRoot]);
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedOriginal = $retriever->getOriginalRootPackage(true);
 
         $this->assertEquals($this->userRoot, $retrievedOriginal);
@@ -99,7 +111,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     {
         $this->repo->method('whatProvides')->willReturn(['2.0.0.0' => $this->targetRoot]);
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedOriginal = $retriever->getOriginalRootPackage(false);
 
         $this->assertEquals(null, $retrievedOriginal);
@@ -108,11 +120,11 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     public function testGetOriginalRootNotOnRepo_Confirm()
     {
         $this->repo->method('whatProvides')->willReturn(['2.0.0.0' => $this->targetRoot]);
-        Console::setInteractive('true');
+        $this->console->setInteractive(true);
         $this->io->method('isInteractive')->willReturn(true);
         $this->io->method('askConfirmation')->willReturn(true);
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedOriginal = $retriever->getOriginalRootPackage(false);
 
         $this->assertEquals($this->userRoot, $retrievedOriginal);
@@ -121,11 +133,11 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     public function testGetOriginalRootNotOnRepo_NoConfirm()
     {
         $this->repo->method('whatProvides')->willReturn(['2.0.0.0' => $this->targetRoot]);
-        Console::setInteractive('true');
+        $this->console->setInteractive(true);
         $this->io->method('isInteractive')->willReturn(true);
         $this->io->method('askConfirmation')->willReturn(false);
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedOriginal = $retriever->getOriginalRootPackage(false);
 
         $this->assertEquals(null, $retrievedOriginal);
@@ -133,9 +145,11 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
 
     public function testGetTargetRootFromRepo()
     {
-        $this->repo->method('whatProvides')->willReturn(['1.1.0.0' => $this->originalRoot, '2.0.0.0' => $this->targetRoot]);
+        $this->repo->method('whatProvides')->willReturn(
+            ['1.1.0.0' => $this->originalRoot, '2.0.0.0' => $this->targetRoot]
+        );
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedTarget = $retriever->getTargetRootPackage();
 
         $this->assertEquals($this->targetRoot, $retrievedTarget);
@@ -145,7 +159,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     {
         $this->repo->method('whatProvides')->willReturn(['1.1.0.0' => $this->originalRoot]);
 
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedTarget = $retriever->getTargetRootPackage();
 
         $this->assertEquals(null, $retrievedTarget);
@@ -153,7 +167,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
 
     public function testGetUserRoot()
     {
-        $retriever = new RootPackageRetriever($this->composer, 'enterprise', '2.0.0');
+        $retriever = new RootPackageRetriever($this->console, $this->composer, 'enterprise', '2.0.0');
         $retrievedTarget = $retriever->getUserRootPackage();
 
         $this->assertEquals($this->userRoot, $retrievedTarget);
@@ -162,8 +176,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
     protected function setUp()
     {
         $this->io = $this->getMockForAbstractClass(IOInterface::class);
-        Console::setIO($this->io);
-        Console::setInteractive(false);
+        $this->console = new Console($this->io);
 
         $this->composer = $this->createPartialMock(Composer::class, [
             'getConfig',

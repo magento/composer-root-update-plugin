@@ -27,33 +27,54 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class MagentoRootUpdaterTest extends UpdatePluginTestCase
 {
-    /** @var MockObject|Composer */
+    /**
+     * @var MockObject|Composer
+     */
     public $composer;
 
-    /** @var RootPackage */
+    /**
+     * @var RootPackage
+     */
     public $installRoot;
 
-    /** @var RootPackage */
+    /**
+     * @var RootPackage
+     */
     public $expectedNoOverride;
 
-    /** @var RootPackage */
+    /**
+     * @var RootPackage
+     */
     public $expectedWithOverride;
 
-    /** @var MockObject|EventDispatcher */
+    /**
+     * @var MockObject|EventDispatcher
+     */
     public $eventDispatcher;
 
-    /** @var MockObject|InputInterface */
+    /**
+     * @var MockObject|InputInterface
+     */
     public $input;
 
-    /** @var MockObject|BaseIO */
+    /**
+     * @var MockObject|BaseIO
+     */
     public $io;
 
-    /** @var MockObject|RootPackageRetriever */
+    /**
+     * @var Console
+     */
+    public $console;
+
+    /**
+     * @var MockObject|RootPackageRetriever
+     */
     public $retriever;
 
     public function testMagentoUpdateSetsFieldsNoOverride()
     {
-        $updater = new MagentoRootUpdater($this->composer);
+        $updater = new MagentoRootUpdater($this->console, $this->composer);
         $updater->runUpdate($this->retriever, false, true, '7.0', 'stable');
         $result = $updater->getJsonChanges();
 
@@ -70,7 +91,7 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
 
     public function testMagentoUpdateSetsFieldsWithOverride()
     {
-        $updater = new MagentoRootUpdater($this->composer);
+        $updater = new MagentoRootUpdater($this->console, $this->composer);
         $updater->runUpdate($this->retriever, true, true, '7.0', 'stable');
         $result = $updater->getJsonChanges();
 
@@ -195,7 +216,7 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
          * Mock IOInterface for interaction
          */
         $this->io = $this->getMockForAbstractClass(IOInterface::class);
-        Console::setIO($this->io);
+        $this->console = new Console($this->io);
 
         /**
          * Mock package repositories
