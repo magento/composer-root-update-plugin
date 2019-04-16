@@ -27,7 +27,7 @@ Because the plugin is hooking into the native `composer require` functionality d
 
 #### [**AccessibleRootPackageLoader**](../src/Magento/ComposerRootUpdatePlugin/ComposerReimplementation/AccessibleRootPackageLoader.php)
 
-**Composer class:** [RootPackageLoader](https://github.com/composer/composer/blob/master/src/Composer/Package/Loader/RootPackageLoader.php)
+**Composer class:** [RootPackageLoader](https://getcomposer.org/apidoc/master/Composer/Package/Loader/RootPackageLoader.htmlp)
 
  - **`extractStabilityFlags()`** -- see [RootPackageLoader::extractStabilityFlags()](https://github.com/composer/composer/blob/master/src/Composer/Package/Loader/RootPackageLoader.php)
    - Takes a package name, version, and minimum-stability setting and returns the stability level that should be used to find the package on a repository
@@ -35,15 +35,15 @@ Because the plugin is hooking into the native `composer require` functionality d
 
 #### [**ExtendableRequireCommand**](../src/Magento/ComposerRootUpdatePlugin/ComposerReimplementation/ExtendableRequireCommand.php)
 
-**Composer class:** [RequireCommand](https://github.com/composer/composer/blob/master/src/Composer/Command/RequireCommand.php)
+**Composer class:** [RequireCommand](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html)
 
- - **`parseComposerJsonFile()`** -- see [RequireCommand::execute()](https://github.com/composer/composer/blob/master/src/Composer/Command/RequireCommand.php)
+ - **`parseComposerJsonFile()`** -- see [RequireCommand::execute()](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html#method_execute)
    - Checks the accessibility of the `composer.json` file and parses out relevant base information that is needed before starting the plugin's processing
    - **Reason for cloning:** The native code exists directly in `RequireCommand::execute()` instead of its own function, but the base information it parses is required by the plugin before it runs as part of the original `RequireCommand` code
- - **`getRequirementsInteractive()`** -- see [InitCommand::determineRequirements()](https://github.com/composer/composer/blob/master/src/Composer/Command/InitCommand.php)
+ - **`getRequirementsInteractive()`** -- see [InitCommand::determineRequirements()](https://getcomposer.org/apidoc/master/Composer/Command/InitCommand.html#method_determineRequirements)
    - Interactively asks for the `composer require` arguments if they are not passed to the CLI command call
    - **Reason for cloning:** The native command calls [InitCommand::findBestVersionAndNameForPackage()](https://github.com/composer/composer/blob/master/src/Composer/Command/InitCommand.php), which would try to validate the target Magento package's requirements before the plugin can process the relevant changes to make it compatible. The original `determineRequirements()` call is still made by `RequireCommand::execute()` after the plugin runs, so Composer's validation still happens as normal.
- - **`revertMageComposerFile()`** -- see [RequireCommand::revertComposerFile()](https://github.com/composer/composer/blob/master/src/Composer/Command/RequireCommand.php)
+ - **`revertMageComposerFile()`** -- see [RequireCommand::revertComposerFile()](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html#method_revertComposerFile)
    - Reverts the `composer.json` file to its original state from before the plugin's changes if the command fails
    - **Reason for cloning:** The plugin makes changes before `RequireCommand` creates a backup, which means when it runs `revertComposerFile()`, the reverted file from the backup does not match the original state, so this function is needed to also revert the plugin's changes
 
@@ -55,9 +55,9 @@ Classes in this namespace tie into the Composer library's code that handles plug
 
 #### [**Commands\MageRootRequireCommand**](../src/Magento/ComposerRootUpdatePlugin/Plugin/Commands/MageRootRequireCommand.php)
 
-This class is the entry point into the plugin's functionality from the `composer require` CLI command.
+This class is the entrypoint into the plugin's functionality from the `composer require` CLI command.
    
-Extends the native [RequireCommand](https://github.com/composer/composer/blob/master/src/Composer/Command/RequireCommand.php) functionality to add additional processing when run with a Magento product as one of the command's parameters.
+Extends the native [RequireCommand](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html) functionality to add additional processing when run with a Magento product as one of the command's parameters.
    
  - **`configure()`**
    - Add the options and description for the plugin functionality to those already configured in `RequireCommand` and sets the new command's name to a dummy unique value so it passes Composer's command registry check
@@ -93,7 +93,7 @@ This is a Composer boilerplate class to let the Composer plugin library know abo
 This class is Composer's entry point into the plugin's functionality and the definition supplied to the plugin registry.
    
  - **`activate()`**
-   - Method must exist in any implementation of [PluginInterface](https://github.com/composer/composer/blob/master/src/Composer/Plugin/PluginInterface.php)
+   - Method must exist in any implementation of [PluginInterface](https://getcomposer.org/apidoc/master/Composer/Plugin/PluginInterface.html)
  - **`getCapabilities()`**
    - Tells Composer that the plugin includes CLI commands and defines the [CommandProvider](#commandprovider) that supplies the command objects
  - **`getSubscribedEvents()`**
@@ -169,7 +169,7 @@ This class runs [DeltaResolver::resolveRootDeltas()](#deltaresolver) if an updat
 
 #### [**RootPackageRetriever**](../src/Magento/ComposerRootUpdatePlugin/Updater/RootPackageRetriever.php)
 
-This class contains methods to retrieve Composer [Package](https://github.com/composer/composer/blob/master/src/Composer/Package/Package.php) objects for the target Magento root project package, the original (default) Magento root project package for the currently-installed Magento version, and the currently-installed root project package (including all user customizations).
+This class contains methods to retrieve Composer [Package](https://getcomposer.org/apidoc/master/Composer/Package/Package.html) objects for the target Magento root project package, the original (default) Magento root project package for the currently-installed Magento version, and the currently-installed root project package (including all user customizations).
 
  - **`getOriginalRootPackage()`**
    - Fetches the original (default) Magento root project package from the Composer repository
@@ -182,7 +182,7 @@ This class contains methods to retrieve Composer [Package](https://github.com/co
  - **`parseOriginalVersionAndEditionFromLock()`**
    - Inspect the `composer.lock` file for the currently-installed Magento product package and parse out the edition and version for use by `getOriginalRootPackage()`
  - **`getRootLocker()`**
-   - Helper function to get the [Locker](https://github.com/composer/composer/blob/master/src/Composer/Package/Locker.php) object for the `composer.lock` file in the project root directory. If the current working directory is `var` (which is the case for the Web Setup Wizard), instead use the `composer.lock` file in the parent directory
+   - Helper function to get the [Locker](https://getcomposer.org/apidoc/master/Composer/Package/Locker.html) object for the `composer.lock` file in the project root directory. If the current working directory is `var` (which is the case for the Web Setup Wizard), instead use the `composer.lock` file in the parent directory
 
 ***
 
@@ -195,7 +195,7 @@ This namespace contains utility classes shared across the rest of the plugin's c
 Command-line logger with interaction methods.
    
  - **`getIO()`**
-   - Returns the [IOInterface](https://github.com/composer/composer/blob/master/src/Composer/IO/IOInterface.php) instance
+   - Returns the [IOInterface](https://getcomposer.org/apidoc/master/Composer/IO/IOInterface.html) instance
  - **`ask()`**
    - Asks the user a yes or no question and return the result. If the console interface has been configured as non-interactive, it does not ask and returns the default value
  - **`log()`**
@@ -212,6 +212,6 @@ Common package-related utility functions.
  - **`getMagentoProductEdition()`**
    - Extracts the edition (`community` or `enterprise`) from a Magento product package name
  - **`findRequire()`**
-   - Searches the `"require"` section of a [Composer](https://github.com/composer/composer/blob/master/src/Composer/Composer.php) object for a package link that fits the supplied name or matcher
+   - Searches the `"require"` section of a [Composer](https://getcomposer.org/apidoc/master/Composer/Composer.html) object for a package link that fits the supplied name or matcher
  - **`isConstraintStrict()`**
    - Checks if a version constraint is strict or if it allows multiple versions (such as `~1.0` or `>= 1.5.3`)

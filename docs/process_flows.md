@@ -19,11 +19,11 @@ There are four paths through the plugin code that cover two main pieces of funct
 
 1. Composer boilerplate and plugin setup
    1. Composer sees the `"type": "composer-plugin"` value in the [composer.json](../src/Magento/ComposerRootUpdatePlugin/composer.json) file for the plugin package
-   2. Composer reads the `"extra"->"class"` field to find the class that implements [PluginInterface](https://github.com/composer/composer/blob/master/src/Composer/Plugin/PluginInterface.php) ([PluginDefinition](class_descriptions.md#plugindefinition))
-   3. `PluginDefinition` implements [Capable](https://github.com/composer/composer/blob/master/src/Composer/Plugin/Capable.php), telling Composer that it provides some capability ([CommandProvider](class_descriptions.md#commandprovider)), which is supplied through `PluginDefinition::getCapabilities()`
+   2. Composer reads the `"extra"->"class"` field to find the class that implements [PluginInterface](https://getcomposer.org/apidoc/master/Composer/Plugin/PluginInterface.html) ([PluginDefinition](class_descriptions.md#plugindefinition))
+   3. `PluginDefinition` implements [Capable](https://getcomposer.org/apidoc/master/Composer/Plugin/Capable.html), telling Composer that it provides some capability ([CommandProvider](class_descriptions.md#commandprovider)), which is supplied through `PluginDefinition::getCapabilities()`
    4. `CommandProvider::getCommands()` supplies Composer with an instance of [MageRootRequireCommand](class_descriptions.md#commandsmagerootrequirecommand)
    5. Composer calls `MageRootRequireCommand::configure()` to obtain the command's name, description, options, and help text
-      - `MageRootRequireCommand` extends Composer's native [RequireCommand](https://github.com/composer/composer/blob/master/src/Composer/Command/RequireCommand.php) and adds its own values to those in the existing implementation
+      - `MageRootRequireCommand` extends Composer's native [RequireCommand](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html) and adds its own values to those in the existing implementation
       - Composer contains a command registry and rejects any new commands that have a conflicting name with a command that is already registered, so `MageRootRequireCommand::configure()` temporarily changes the command's name from `require` to a dummy value to bypass the registry check
    6. Composer calls `MageRootRequireCommand::setApplication()` after checking for naming conflicts but before adding the command to the registry, at which time the command name changes back to `require`
    7. Composer adds `MageRootRequireCommand` to the registry, overwriting the native `RequireCommand` as the command associated with the name `require`
@@ -33,7 +33,7 @@ There are four paths through the plugin code that cover two main pieces of funct
 5. `MageRootRequireCommand::execute()` checks the `composer require` arguments for a `magento/product` package, and if it finds one it calls `MageRootRequireCommand::runUpdate()`
 6. `MageRootRequireCommand::runUpdate()` calls [MagentoRootUpdater::runUpdate()](class_descriptions.md#magentorootupdater)
 7. `MageRootRequireCommand::runUpdate()` calls [DeltaResolver::resolveRootDeltas()](class_descriptions.md#deltaresolver)
-8. `DeltaResolver::resolveRootDeltas()` uses [RootPackageRetriever](class_descriptions.md#rootpackageretriever) to obtain the Composer [Package](https://github.com/composer/composer/blob/master/src/Composer/Package/Package.php) objects for the root `composer.json` files from the default installation of the existing edition and version, the target edition and version supplied to the `composer require` call, and the user's current installation including any customizations they have made 
+8. `DeltaResolver::resolveRootDeltas()` uses [RootPackageRetriever](class_descriptions.md#rootpackageretriever) to obtain the Composer [Package](https://getcomposer.org/apidoc/master/Composer/Package/Package.html) objects for the root `composer.json` files from the default installation of the existing edition and version, the target edition and version supplied to the `composer require` call, and the user's current installation including any customizations they have made 
 9. `DeltaResolver::resolveRootDeltas()` iterates over the fields in `composer.json` to determine any values that need to be updated to match the root `composer.json` file of the new Magento edition/version
    1. To find these values, it compares the values for each field in the default project for the installed edition/version with the project for the target edition/version (`DeltaResolver::findResolution()`)
    2. If a value has changed in the target, it checks that field in the user's customized root `composer.json` file to see if it has been overwritten with a custom value
@@ -52,10 +52,10 @@ There are four paths through the plugin code that cover two main pieces of funct
 
 1. Composer boilerplate and plugin setup
    1. Composer sees the `"type": "composer-plugin"` value in the `composer.json` file for the plugin package
-   2. Composer reads the `"extra"->"class"` field to find the class that implements [PluginInterface](https://github.com/composer/composer/blob/master/src/Composer/Plugin/PluginInterface.php) ([PluginDefinition](class_descriptions.md#plugindefinition))
-   3. `PluginDefinition` implements [EventSubscriberInterface](https://github.com/composer/composer/blob/master/src/Composer/EventDispatcher/EventSubscriberInterface.php), telling Composer that it subscribes to events triggered by Composer operations
+   2. Composer reads the `"extra"->"class"` field to find the class that implements [PluginInterface](https://getcomposer.org/apidoc/master/Composer/Plugin/PluginInterface.html) ([PluginDefinition](class_descriptions.md#plugindefinition))
+   3. `PluginDefinition` implements [EventSubscriberInterface](https://getcomposer.org/apidoc/master/Composer/EventDispatcher/EventSubscriberInterface.html), telling Composer that it subscribes to events triggered by Composer operations
    4. `PluginDefinition::getSubscribedEvents()` tells Composer to call the `PluginDefinition::packageUpdate()` function when the `POST_PACKAGE_INSTALL` or `POST_PACKAGE_UPDATE` events are triggered
-2. Composer runs the [RequireCommand::execute()](https://github.com/composer/composer/blob/master/src/Composer/Command/RequireCommand.php) or [UpdateCommand::execute()](https://github.com/composer/composer/blob/master/src/Composer/Command/UpdateCommand.php) method as relevant, which results in Composer triggering either the `POST_PACKAGE_INSTALL` or `POST_PACKAGE_UPDATE` event
+2. Composer runs the [RequireCommand::execute()](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html#method_execute) or [UpdateCommand::execute()](https://getcomposer.org/apidoc/master/Composer/Command/UpdateCommand.html#method_execute) method as relevant, which results in Composer triggering either the `POST_PACKAGE_INSTALL` or `POST_PACKAGE_UPDATE` event
 3. Composer checks the listeners registered to the triggered event and calls `PluginDefinition::packageUpdate()`
 4. `PluginDefinition::packageUpdate()` calls [WebSetupWizardPluginInstaller::packageEvent()](class_descriptions.md#websetupwizardplugininstaller)
 5. `WebSetupWizardPluginInstaller::packageEvent()` checks the event to see if it was triggered by a change to the `magento/composer-root-update-plugin` package, and if so it calls `WebSetupWizardPluginInstaller::updateSetupWizardPlugin()`
@@ -88,8 +88,8 @@ There are four paths through the plugin code that cover two main pieces of funct
 
 1. Composer boilerplate and plugin setup
    1. Composer sees the `"type": "composer-plugin"` value in the [composer.json](../src/Magento/ComposerRootUpdatePlugin/composer.json) file for the plugin package
-   2. Composer reads the `"extra"->"class"` field to find the class that implements [PluginInterface](https://github.com/composer/composer/blob/master/src/Composer/Plugin/PluginInterface.php) ([PluginDefinition](class_descriptions.md#plugindefinition))
-   3. `PluginDefinition` implements [Capable](https://github.com/composer/composer/blob/master/src/Composer/Plugin/Capable.php), telling Composer that it provides some capability ([CommandProvider](class_descriptions.md#commandprovider)), which is supplied through `PluginDefinition::getCapabilities()`
+   2. Composer reads the `"extra"->"class"` field to find the class that implements [PluginInterface](https://getcomposer.org/apidoc/master/Composer/Plugin/PluginInterface.html) ([PluginDefinition](class_descriptions.md#plugindefinition))
+   3. `PluginDefinition` implements [Capable](https://getcomposer.org/apidoc/master/Composer/Plugin/Capable.html), telling Composer that it provides some capability ([CommandProvider](class_descriptions.md#commandprovider)), which is supplied through `PluginDefinition::getCapabilities()`
    4. `CommandProvider::getCommands()` supplies Composer with an instance of [UpdatePluginNamespaceCommands](class_descriptions.md#commandsupdatepluginnamespacecommands)
    5. Composer calls `UpdatePluginNamespaceCommands::configure()` to obtain the command's name, description, options, and help text
    6. Composer adds `UpdatePluginNamespaceCommands` to the registry under the name `magento-update-plugin`
