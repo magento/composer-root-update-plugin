@@ -14,7 +14,10 @@ The `magento/composer-root-update-plugin` package requires Composer version 1.8.
 
 ## Installation
 
-To install the plugin, run `composer require magento/composer-root-update-plugin ~1.0` in the Magento root directory.
+To install the plugin, run the following commands in the Magento root directory.
+    
+    composer require magento/composer-root-update-plugin ~1.0 --no-update
+    composer update 
 
 # Usage
 
@@ -24,7 +27,7 @@ If the `composer require` command for the target Magento package fails, one of t
 
 ## Installations that started with another Magento product
 
-If the local Magento installation has previously been updated from a previous Magento product version or edition, the root `composer.json` file may still have values from the earlier package that need to be updated to the current Magento requirement before updating to the target Magento product.
+If the local Magento installation has previously been updated from a previous Magento product version or edition without the plugin installed, the root `composer.json` file may still have values from the earlier package that need to be updated to the current Magento requirement before updating to the target Magento product.
 
 In this case, run the following command with the appropriate values to correct the existing `composer.json` file before proceeding with the expected `composer require` command for the target Magento product.
 
@@ -125,11 +128,12 @@ For reference, these are the `"require"` and `"require-dev"` sections for defaul
 
 ### With `magento/composer-root-update-plugin`:
 
-In the project directory for a Magento Community Edition 2.2.8 installation, a user runs `composer require magento/composer-root-update-plugin ~1.0` before the Magento Community Edition 2.3.1 upgrade commands. 
+In the project directory for a Magento Community Edition 2.2.8 installation, a user runs `composer require magento/composer-root-update-plugin ~1.0 --no-update` and `composer update` before the Magento Community Edition 2.3.1 upgrade commands. 
 
 ```
-$ composer require magento/composer-root-update-plugin ~1.0
+$ composer require magento/composer-root-update-plugin ~1.0 --no-update
 ./composer.json has been updated
+$ composer update
 Loading composer repositories with package information
 Updating dependencies (including require-dev)
 Package operations: 1 install, 0 updates, 0 removals
