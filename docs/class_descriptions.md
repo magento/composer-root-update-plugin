@@ -150,13 +150,17 @@ This is accomplished by comparing `composer.json` fields between the original Ma
  - **`findResolution()`**
    - For an individual field value, compare the original Magento value to the target Magento value, and if a delta is found, check if the user's installation has a customized value for the field. If the user has changed the value, resolve the conflict according to the CLI command options: use the user's custom value, override with the target Magento value, or interactively ask the user which of the two values should be used
  - **`resolveLinkSection()`**
-   - For a given `composer.json` section that consists of links to package versions/constraints (such as the `require` and `conflict` sections), call `findResolution()` for each package constraint found in either the original Magento root or the target Magento root
+   - For a given `composer.json` section that consists of links to package versions/constraints (such as the `require` and `conflict` sections), call `findLinkResolution()` for each package constraint found in either the original Magento root or the target Magento root
  - **`resolveArraySection()`**
    - For a given `composer.json` section that consists of data that is not package links (such as the `"autoload"` or `"extra"` sections), call `resolveNestedArray()` and accept the new values if changes were made
  - **`resolveNestedArray()`**
    - Recursively processes changes to a `composer.json` value that could be a nested array, calling `findResolution()` for each "leaf" value found in either the original Magento root or the target Magento root
- - **`linksToMap()`**
-   - Helper function to convert a set of package links to an associative array for use by `resolveLinkSection()`
+ - **`findLinkResolution()`**
+   - Helper function to call `findResolution()` for a particular package for use by `resolveLinkSection()`
+ - **`getLinkOrderOverride()`**
+   - Determine the order to use for a link section when the user's order disagrees with the target Magento section order
+ - **`buildLinkOrderComparator()`**
+   - Construct the comparator function to use for sorting a set of links according to `getLinkOverride()` results followed by the order in the target Magento version followed by the order of custom values in the user's installation
 
 #### [**MagentoRootUpdater**](../src/Magento/ComposerRootUpdatePlugin/Updater/MagentoRootUpdater.php)
 

@@ -324,7 +324,8 @@ class DeltaResolverTest extends UpdatePluginTestCase
             'require',
             $originalMageLinks,
             $targetMageLinks,
-            $userLinks
+            $userLinks,
+            false
         );
 
         $this->assertLinksEqual($expected, $result['require']);
@@ -343,7 +344,8 @@ class DeltaResolverTest extends UpdatePluginTestCase
             'require',
             $originalMageLinks,
             $targetMageLinks,
-            $userLinks
+            $userLinks,
+            false
         );
 
         $this->assertLinksEqual($expected, $result['require']);
@@ -362,10 +364,97 @@ class DeltaResolverTest extends UpdatePluginTestCase
             'require',
             $originalMageLinks,
             $targetMageLinks,
-            $userLinks
+            $userLinks,
+            false
         );
 
         $this->assertLinksEqual($expected, $result['require']);
+    }
+
+    public function testResolveLinksUpdateOrder()
+    {
+        $orderedLinks = $this->createLinks(4, 'target/link');
+        $reorderedLinks = array_reverse($orderedLinks);
+        $targetMageLinks = array_merge($this->createLinks(1), $orderedLinks);
+        $originalMageLinks = array_merge($this->createLinks(2), $reorderedLinks);
+
+        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $result = $resolver->resolveLinkSection(
+            'require',
+            $originalMageLinks,
+            $targetMageLinks,
+            $originalMageLinks,
+            true
+        );
+
+        $this->assertLinksEqual($targetMageLinks, $result['require']);
+        $this->assertLinksOrdered($targetMageLinks, $result['require']);
+    }
+
+    public function testResolveLinksAddLinkWithOrder()
+    {
+        $targetMageLinks = array_merge($this->createLinks(3), $this->createLinks(4, 'target/link'));
+        $originalMageLinks = array_merge($this->createLinks(2), $this->createLinks(4, 'target/link'));
+
+        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $result = $resolver->resolveLinkSection(
+            'require',
+            $originalMageLinks,
+            $targetMageLinks,
+            $originalMageLinks,
+            true
+        );
+
+        $this->assertLinksEqual($targetMageLinks, $result['require']);
+        $this->assertLinksOrdered($targetMageLinks, $result['require']);
+    }
+
+    public function testResolveLinksOrderOverride()
+    {
+        $orderedLinks = $this->createLinks(4, 'target/link');
+        $reorderedLinks = array_reverse($orderedLinks);
+        $originalMageLinks = $this->createLinks(2);
+        $targetMageLinks = array_merge($originalMageLinks, $orderedLinks);
+        $userLinks = array_merge($originalMageLinks, $reorderedLinks);
+
+        $this->io->expects($this->at(1))->method('writeError')
+            ->with($this->stringContains('overriding local order'));
+
+        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $result = $resolver->resolveLinkSection(
+            'require',
+            $originalMageLinks,
+            $targetMageLinks,
+            $userLinks,
+            true
+        );
+
+        $this->assertLinksEqual($targetMageLinks, $result['require']);
+        $this->assertLinksOrdered($targetMageLinks, $result['require']);
+    }
+
+    public function testResolveLinksOrderNoOverride()
+    {
+        $orderedLinks = $this->createLinks(4, 'target/link');
+        $reorderedLinks = array_reverse($orderedLinks);
+        $originalMageLinks = $this->createLinks(2);
+        $targetMageLinks = array_merge($originalMageLinks, $orderedLinks);
+        $userLinks = array_merge($originalMageLinks, $reorderedLinks);
+
+        $this->io->expects($this->at(0))->method('writeError')
+            ->with($this->stringContains('will not be changed'));
+
+        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $result = $resolver->resolveLinkSection(
+            'require',
+            $originalMageLinks,
+            $targetMageLinks,
+            $userLinks,
+            true
+        );
+
+        $this->assertLinksEqual($userLinks, $result['require']);
+        $this->assertLinksOrdered($userLinks, $result['require']);
     }
 
     public function setUp()

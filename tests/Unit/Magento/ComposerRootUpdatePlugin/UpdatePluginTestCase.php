@@ -26,7 +26,8 @@ abstract class UpdatePluginTestCase extends \PHPUnit\Framework\TestCase
     {
         $links = [];
         for ($i = 1; $i <= $count; $i++) {
-            $links[] = new Link('root/pkg', "$target$i", new Constraint('==', "$i.0.0"), null, "$i.0.0");
+            $name = "$target$i";
+            $links[$name] = new Link('root/pkg', $name, new Constraint('==', "$i.0.0"), null, "$i.0.0");
         }
         return $links;
     }
@@ -41,12 +42,13 @@ abstract class UpdatePluginTestCase extends \PHPUnit\Framework\TestCase
     public static function changeLink($links, $index)
     {
         $result = $links;
-        $changeLink = $links[$index];
+        /** @var Link $changeLink */
+        $changeLink = array_values($links)[$index];
         $version = explode(' ', $changeLink->getConstraint()->getPrettyString())[1];
         $versionParts = array_map('intval', explode('.', $version));
         $versionParts[1] = $versionParts[1] + 1;
         $version = implode('.', $versionParts);
-        $result[$index] = new Link(
+        $result[$changeLink->getTarget()] = new Link(
             $changeLink->getSource(),
             $changeLink->getTarget(),
             new Constraint('==', $version),
@@ -66,58 +68,30 @@ abstract class UpdatePluginTestCase extends \PHPUnit\Framework\TestCase
     public static function assertLinksEqual($expected, $jsonChanges)
     {
         static::assertEquals(count($expected), count($jsonChanges));
-        while (count($expected) > 0) {
-            $expectedLink = array_shift($expected);
-            $expectedTarget = $expectedLink->getTarget();
-            $expectedConstraint = $expectedLink->getConstraint()->getPrettyString();
-            $found = null;
-            foreach ($jsonChanges as $target => $constraint) {
-                if ($target === $expectedTarget &&
-                    $constraint === $expectedConstraint) {
-                    $found = $target;
-                    break;
-                }
-            }
-            static::assertNotEmpty($found, "Could not find a link matching $expectedLink");
-            unset($jsonChanges[$found]);
+        $remainingJson = $jsonChanges;
+        foreach ($expected as $expectedTarget => $expectedLink) {
+            $expectedTarget = strtolower($expectedTarget);
+            static::assertArrayHasKey($expectedTarget, $remainingJson);
+            static::assertEquals($expectedLink->getConstraint()->getPrettyString(), $remainingJson[$expectedTarget]);
+            unset($remainingJson[$expectedTarget]);
         }
     }
 
     /**
-     * Assert that two arrays of links are not equal without checking order
-     *
+     * Assert that the links in the $jsonChanges are ordered as expected
+
      * @param Link[] $expected
-     * @param Link[] $actual
+     * @param array $jsonChanges
      * @return void
      */
-    public static function assertLinksNotEqual($expected, $actual)
+    public static function assertLinksOrdered($expected, $jsonChanges)
     {
-        if (count($expected) !== count($actual)) {
-            static::assertNotEquals(count($expected), count($actual));
-            return;
-        }
-
-        while (count($expected) > 0) {
-            $expectedLink = array_shift($expected);
-            $expectedSource = $expectedLink->getSource();
-            $expectedTarget = $expectedLink->getTarget();
-            $expectedConstraint = $expectedLink->getConstraint()->getPrettyString();
-            $found = -1;
-            foreach ($actual as $key => $actualLink) {
-                if ($actualLink->getSource() === $expectedSource &&
-                    $actualLink->getTarget() === $expectedTarget &&
-                    $actualLink->getConstraint()->getPrettyString() === $expectedConstraint) {
-                    $found = $key;
-                    break;
-                }
-            }
-            if ($found === -1) {
-                static::assertEquals(-1, $found);
-                return;
-            }
-            unset($actual[$found]);
-        }
-        static::fail('Expected Link sets to not be equal');
+        $expectedOrder = array_map(function ($link) {
+            /** @var Link $link */
+            return $link->getTarget();
+        }, array_values($expected));
+        $actualOrder = array_keys($jsonChanges);
+        static::assertEquals($expectedOrder, $actualOrder);
     }
 
     /**
