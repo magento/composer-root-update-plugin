@@ -133,7 +133,11 @@ class WebSetupWizardPluginInstaller
         // If in ./var already or Magento or the plugin is missing from composer.json, do not install in var
         if (!preg_match('/\/composer\.json$/', $filePath) ||
             preg_match('/\/var\/composer\.json$/', $filePath) ||
-            !PackageUtils::findRequire($composer, '/magento\/product-(community|enterprise)-edition/') ||
+            !PackageUtils::findRequire(
+                $composer,
+                '/magento\/product-(' . PackageUtils::OPEN_SOURCE_PKG_EDITION . '|' .
+                PackageUtils::COMMERCE_PKG_EDITION . ')-edition/'
+            ) ||
             !PackageUtils::findRequire($composer, $packageName)) {
             return false;
         }

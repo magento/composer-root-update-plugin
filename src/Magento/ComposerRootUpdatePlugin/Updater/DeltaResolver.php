@@ -119,7 +119,7 @@ class DeltaResolver
     }
 
     /**
-     * Find value deltas from base->target version and resolve any conflicts with overlapping user changes
+     * Find value deltas from original->target version and resolve any conflicts with overlapping user changes
      *
      * @param string $field
      * @param array|mixed|null $originalMageVal

@@ -15,6 +15,9 @@ use Composer\Package\Version\VersionParser;
  */
 class PackageUtils
 {
+    const OPEN_SOURCE_PKG_EDITION = 'community';
+    const COMMERCE_PKG_EDITION = 'enterprise';
+
     /**
      * Helper function to extract the package type from a Magento product or project package name
      *
@@ -23,7 +26,8 @@ class PackageUtils
      */
     static public function getMagentoPackageType($packageName)
     {
-        $regex = '/^magento\/(?<type>product|project)-(community|enterprise)-edition$/';
+        $regex = '/^magento\/(?<type>product|project)-(' . static::OPEN_SOURCE_PKG_EDITION . '|' .
+            static::COMMERCE_PKG_EDITION . ')-edition$/';
         if (preg_match($regex, $packageName, $matches)) {
             return $matches['type'];
         } else {
@@ -35,11 +39,12 @@ class PackageUtils
      * Helper function to extract the edition from a package name if it is a Magento product
      *
      * @param string $packageName
-     * @return string|null 'community' or 'enterprise' as applicable, null if not matching
+     * @return string|null OPEN_SOURCE_PKG_EDITION or COMMERCE_PKG_EDITION as applicable, null if not matching
      */
     static public function getMagentoProductEdition($packageName)
     {
-        $regex = '/^magento\/product-(?<edition>community|enterprise)-edition$/';
+        $regex = '/^magento\/product-(?<edition>' . static::OPEN_SOURCE_PKG_EDITION . '|' .
+            static::COMMERCE_PKG_EDITION . ')-edition$/';
         if ($packageName && preg_match($regex, $packageName, $matches)) {
             return $matches['edition'];
         } else {

@@ -313,8 +313,8 @@ class RootPackageRetriever
             if ($pkgEdition) {
                 $lockedMageProduct = $lockedPackage;
 
-                // Both editions exist for enterprise, so stop at enterprise to not overwrite with community
-                if ($pkgEdition == 'enterprise') {
+                // Both editions exist for commerce, so stop at commerce to not overwrite with open source
+                if ($pkgEdition == PackageUtils::COMMERCE_PKG_EDITION) {
                     break;
                 }
             }
@@ -373,10 +373,11 @@ class RootPackageRetriever
      */
     public function getTargetLabel()
     {
-        if ($this->targetEdition && $this->prettyTargetVersion) {
-            return 'Magento ' . ucfirst($this->targetEdition) . " Edition " . $this->prettyTargetVersion;
-        } elseif ($this->targetEdition && $this->targetConstraint) {
-            return 'Magento ' . ucfirst($this->targetEdition) . " Edition " . $this->targetConstraint;
+        $editionLabel = $this->getEditionLabel($this->targetEdition);
+        if ($editionLabel && $this->prettyTargetVersion) {
+            return "Magento $editionLabel " . $this->prettyTargetVersion;
+        } elseif ($editionLabel && $this->targetConstraint) {
+            return "Magento $editionLabel " . $this->targetConstraint;
         }
         return static::MISSING_ROOT_LABEL;
     }
@@ -388,10 +389,27 @@ class RootPackageRetriever
      */
     public function getOriginalLabel()
     {
-        if ($this->originalEdition && $this->prettyOriginalVersion) {
-            return 'Magento ' . ucfirst($this->originalEdition) . " Edition " . $this->prettyOriginalVersion;
+        $editionLabel = $this->getEditionLabel($this->originalEdition);
+        if ($editionLabel && $this->prettyOriginalVersion) {
+            return "Magento $editionLabel " . $this->prettyOriginalVersion;
         }
         return static::MISSING_ROOT_LABEL;
+    }
+
+    /**
+     * Helper function to turn a package edition into the appropriate label
+     *
+     * @param string $packageEdition
+     * @return string|null
+     */
+    private function getEditionLabel($packageEdition)
+    {
+        if ($packageEdition == PackageUtils::OPEN_SOURCE_PKG_EDITION) {
+            return 'Open Source';
+        } elseif ($packageEdition == PackageUtils::COMMERCE_PKG_EDITION) {
+            return 'Commerce';
+        }
+        return null;
     }
 
     /**

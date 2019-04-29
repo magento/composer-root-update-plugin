@@ -98,7 +98,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Edition of the initially-installed Magento product to use as the base for composer.json updates. ' .
-                'Valid values: community, enterprise'
+                'Valid values: \'Open Source\', \'Commerce\''
             )
             ->addOption(
                 static::BASE_VERSION_OPT,
@@ -174,7 +174,8 @@ class MageRootRequireCommand extends ExtendableRequireCommand
                         $updater = new MagentoRootUpdater($this->console, $this->getComposer());
                         $didUpdate = $this->runUpdate($updater, $input, $edition, $constraint);
                     } catch (\Exception $e) {
-                        $label = 'Magento ' . ucfirst($edition) . " Edition $constraint";
+                        $editionLabel = $edition == PackageUtils::COMMERCE_PKG_EDITION ? 'Commerce' : 'Open Source';
+                        $label = "Magento $editionLabel $constraint";
                         $this->revertMageComposerFile("Update of composer.json with $label changes failed");
                         $this->console->log($e->getMessage());
                         $didUpdate = false;
@@ -241,10 +242,12 @@ class MageRootRequireCommand extends ExtendableRequireCommand
         $overrideOriginalVersion = $input->getOption(static::BASE_VERSION_OPT);
         if ($overrideOriginalEdition) {
             $overrideOriginalEdition = strtolower($overrideOriginalEdition);
-            if ($overrideOriginalEdition !== 'community' && $overrideOriginalEdition !== 'enterprise') {
+            if ($overrideOriginalEdition !== 'open source' && $overrideOriginalEdition !== 'commerce') {
                 $opt = '--' . static::BASE_EDITION_OPT;
-                throw new InvalidOptionException("'$opt' accepts only 'community' or 'enterprise'");
+                throw new InvalidOptionException("'$opt' accepts only 'Open Source' or 'Commerce'");
             }
+            $overrideOriginalEdition = $overrideOriginalEdition = 'open source' ?
+                PackageUtils::OPEN_SOURCE_PKG_EDITION : PackageUtils::COMMERCE_PKG_EDITION;
         }
 
         $this->retriever = new RootPackageRetriever(

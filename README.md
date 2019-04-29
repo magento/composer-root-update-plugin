@@ -31,7 +31,7 @@ If the local Magento installation has previously been updated from a previous Ma
 
 In this case, run the following command with the appropriate values to correct the existing `composer.json` file before proceeding with the expected `composer require` command for the target Magento product.
 
-    composer require <current_Magento_package> <current_version> --base-magento-edition <community|enterprise> --base-magento-version <original_Magento_version>
+    composer require <current_Magento_package> <current_version> --base-magento-edition '<Open Source|Commerce>' --base-magento-version <original_Magento_version>
 
 ## Conflicting custom values
 
@@ -57,7 +57,7 @@ To reinstall the plugin in `var`, run the following command in the Magento root 
 
 ### Without `magento/composer-root-update-plugin`:
 
-In the project directory for a Magento Community Edition 2.2.8 installation, a user tries to run the `composer require` and `composer update` commands for Magento Community Edition 2.3.1 with these results:
+In the project directory for a Magento Open Source 2.2.8 installation, a user tries to run the `composer require` and `composer update` commands for Magento Open Source 2.3.1 with these results:
 
 ```
 $ composer require magento/product-community-edition 2.3.1 --no-update
@@ -88,7 +88,7 @@ This is only one of the changes to the root project `composer.json` file between
 
 The changes to the root project `composer.json` files can be done manually by the user without the plugin, but the values that need to change can differ depending on the Magento versions involved and user-customized values may already override the Magento defaults. This means the exact upgrade steps necessary can be different for every user and determining the correct changes to make manually for a given user's configuration may be error-prone. 
 
-For reference, these are the `"require"` and `"require-dev"` sections for default installations (no user customizations) of Magento Community Edition versions 2.2.8 and 2.3.1. It is important to note that these sections of `composer.json` are not the only ones that can change between versions. The `"autoload"` and `"conflict"` sections, for example, can also affect Magento functionality and need to be kept up-to-date with the installed Magento versions.
+For reference, these are the `"require"` and `"require-dev"` sections for default installations (no user customizations) of Magento Open Source versions 2.2.8 and 2.3.1. It is important to note that these sections of `composer.json` are not the only ones that can change between versions. The `"autoload"` and `"conflict"` sections, for example, can also affect Magento functionality and need to be kept up-to-date with the installed Magento versions.
 
  - **2.2.8**
    ```
@@ -128,7 +128,7 @@ For reference, these are the `"require"` and `"require-dev"` sections for defaul
 
 ### With `magento/composer-root-update-plugin`:
 
-In the project directory for a Magento Community Edition 2.2.8 installation, a user runs `composer require magento/composer-root-update-plugin ~1.0 --no-update` and `composer update` before the Magento Community Edition 2.3.1 upgrade commands. 
+In the project directory for a Magento Open Source 2.2.8 installation, a user runs `composer require magento/composer-root-update-plugin ~1.0 --no-update` and `composer update` before the Magento Open Source 2.3.1 upgrade commands. 
 
 ```
 $ composer require magento/composer-root-update-plugin ~1.0 --no-update
@@ -153,25 +153,25 @@ Generating autoload files
 
 As is normal for `composer require`, `magento/composer-root-update-plugin` is added to the `composer.json` file. The plugin also installs itself in the directory used by the Magento Web Setup Wizard during dependency validation.
 
-With the plugin installed, the user proceeds with the `composer require` command for Magento Community Edition 2.3.1 (`--verbose` mode used here for demonstration).
+With the plugin installed, the user proceeds with the `composer require` command for Magento Open Source 2.3.1 (`--verbose` mode used here for demonstration).
 
 ```
 $ composer require magento/product-community-edition 2.3.1 --no-update --verbose
- [Magento Community Edition 2.3.1] Base Magento project package version: magento/project-community-edition 2.2.8
- [Magento Community Edition 2.3.1] Removing require entries: composer/composer
- [Magento Community Edition 2.3.1] Adding require-dev constraints: allure-framework/allure-phpunit=~1.2.0
- [Magento Community Edition 2.3.1] Updating require-dev constraints: magento/magento2-functional-testing-framework=~2.3.13, phpunit/phpunit=~6.5.0, squizlabs/php_codesniffer=3.3.1, friendsofphp/php-cs-fixer=~2.13.0, sebastian/phpcpd=~3.0.0
- [Magento Community Edition 2.3.1] Adding conflict constraints: gene/bluefoot=*
- [Magento Community Edition 2.3.1] Updating autoload.psr-4.Zend\Mvc\Controller\ entry: "setup/src/Zend/Mvc/Controller/"
-Updating composer.json for Magento Community Edition 2.3.1 ...
- [Magento Community Edition 2.3.1] Writing changes to the root composer.json...
- [Magento Community Edition 2.3.1] <path>/composer.json has been updated
+ [Magento Open Source 2.3.1] Base Magento project package version: magento/project-community-edition 2.2.8
+ [Magento Open Source 2.3.1] Removing require entries: composer/composer
+ [Magento Open Source 2.3.1] Adding require-dev constraints: allure-framework/allure-phpunit=~1.2.0
+ [Magento Open Source 2.3.1] Updating require-dev constraints: magento/magento2-functional-testing-framework=~2.3.13, phpunit/phpunit=~6.5.0, squizlabs/php_codesniffer=3.3.1, friendsofphp/php-cs-fixer=~2.13.0, sebastian/phpcpd=~3.0.0
+ [Magento Open Source 2.3.1] Adding conflict constraints: gene/bluefoot=*
+ [Magento Open Source 2.3.1] Updating autoload.psr-4.Zend\Mvc\Controller\ entry: "setup/src/Zend/Mvc/Controller/"
+Updating composer.json for Magento Open Source 2.3.1 ...
+ [Magento Open Source 2.3.1] Writing changes to the root composer.json...
+ [Magento Open Source 2.3.1] <path>/composer.json has been updated
 ./composer.json has been updated
 ```
 
 The plugin detects the user's request for the 2.3.1 version of `magento/product-community-edition` and looks up the `composer.json` file for the corresponding `magento/project-community-edition` 2.3.1 root project package. It finds the values that are different between 2.2.8 and 2.3.1 and updates the local `composer.json` file accordingly, then lets Composer proceed with the normal `composer require` functionality.
 
-With the root `composer.json` file updated for Magento Community Edition 2.3.1, the user proceeds with the `composer update` command:
+With the root `composer.json` file updated for Magento Open Source 2.3.1, the user proceeds with the `composer update` command:
 
 ```
 $ composer update
@@ -184,9 +184,9 @@ Writing lock file
 Generating autoload files
 ```
 
-With the updated values from Magento Community Edition 2.3.1, the `symfony/console` conflict no longer exists and the update occurs as expected.
+With the updated values from Magento Open Source 2.3.1, the `symfony/console` conflict no longer exists and the update occurs as expected.
 
-For reference, these are the `"require"` and `"require-dev"` sections from the `composer.json` file after `composer require magento/product-community-edition 2.3.1 --no-update` runs with the plugin on a Magento Community Edition 2.2.8 installation. They contain exactly the same entries as the default Magento Community Edition 2.3.1 root `composer.json` file (with the addition of the `magento/composer-root-update-plugin` requirement).
+For reference, these are the `"require"` and `"require-dev"` sections from the `composer.json` file after `composer require magento/product-community-edition 2.3.1 --no-update` runs with the plugin on a Magento Open Source 2.2.8 installation. They contain exactly the same entries as the default Magento Open Source 2.3.1 root `composer.json` file (with the addition of the `magento/composer-root-update-plugin` requirement).
 
    ```
     "require": {

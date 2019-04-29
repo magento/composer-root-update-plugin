@@ -210,7 +210,7 @@ Common package-related utility functions.
  - **`getMagentoPackageType()`**
    - Extracts the package type (`product` or `project`) from a Magento package name
  - **`getMagentoProductEdition()`**
-   - Extracts the edition (`community` or `enterprise`) from a Magento product package name
+   - Extracts the package edition from a Magento product package name
  - **`findRequire()`**
    - Searches the `"require"` section of a [Composer](https://getcomposer.org/apidoc/master/Composer/Composer.html) object for a package link that fits the supplied name or matcher
  - **`isConstraintStrict()`**
