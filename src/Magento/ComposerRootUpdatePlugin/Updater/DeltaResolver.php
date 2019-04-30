@@ -89,21 +89,41 @@ class DeltaResolver
         $target = $this->targetMageRootPackage;
         $user = $this->userRootPackage;
 
-        $this->resolveLinkSection('require', $original->getRequires(), $target->getRequires(), $user->getRequires());
+        $this->resolveLinkSection(
+            'require',
+            $original->getRequires(),
+            $target->getRequires(),
+            $user->getRequires(),
+            true
+        );
         $this->resolveLinkSection(
             'require-dev',
             $original->getDevRequires(),
             $target->getDevRequires(),
-            $user->getDevRequires()
+            $user->getDevRequires(),
+            true
         );
         $this->resolveLinkSection(
             'conflict',
             $original->getConflicts(),
             $target->getConflicts(),
-            $user->getConflicts()
+            $user->getConflicts(),
+            false
         );
-        $this->resolveLinkSection('provide', $original->getProvides(), $target->getProvides(), $user->getProvides());
-        $this->resolveLinkSection('replace', $original->getReplaces(), $target->getReplaces(), $user->getReplaces());
+        $this->resolveLinkSection(
+            'provide',
+            $original->getProvides(),
+            $target->getProvides(),
+            $user->getProvides(),
+            false
+        );
+        $this->resolveLinkSection(
+            'replace',
+            $original->getReplaces(),
+            $target->getReplaces(),
+            $user->getReplaces(),
+            false
+        );
 
         $this->resolveArraySection('autoload', $original->getAutoload(), $target->getAutoload(), $user->getAutoload());
         $this->resolveArraySection(
@@ -215,53 +235,26 @@ class DeltaResolver
      * @param Link[] $originalMageLinks
      * @param Link[] $targetMageLinks
      * @param Link[] $userLinks
+     * @param bool $verifyOrder
      * @return array
      */
-    public function resolveLinkSection($section, $originalMageLinks, $targetMageLinks, $userLinks)
+    public function resolveLinkSection($section, $originalMageLinks, $targetMageLinks, $userLinks, $verifyOrder)
     {
-        /** @var Link[] $originalLinkMap */
-        $originalLinkMap = static::linksToMap($originalMageLinks);
-
-        /** @var Link[] $targetLinkMap */
-        $targetLinkMap = static::linksToMap($targetMageLinks);
-
-        /** @var Link[] $userLinkMap */
-        $userLinkMap = static::linksToMap($userLinks);
-
         $adds = [];
         $removes = [];
         $changes = [];
-        $magePackages = array_unique(array_merge(array_keys($originalLinkMap), array_keys($targetLinkMap)));
+        $magePackages = array_unique(array_merge(array_keys($originalMageLinks), array_keys($targetMageLinks)));
         foreach ($magePackages as $pkg) {
             if ($section === 'require' && PackageUtils::getMagentoProductEdition($pkg)) {
                 continue;
             }
-            $field = "$section:$pkg";
-            $originalConstraint = key_exists($pkg, $originalLinkMap) ? $originalLinkMap[$pkg]->getConstraint() : null;
-            $originalMageVal = ($originalConstraint === null) ? null : $originalConstraint->__toString();
-            $prettyOriginalMageVal = ($originalConstraint === null) ? null : $originalConstraint->getPrettyString();
-            $targetConstraint = key_exists($pkg, $targetLinkMap) ? $targetLinkMap[$pkg]->getConstraint() : null;
-            $targetMageVal = ($targetConstraint === null) ? null : $targetConstraint->__toString();
-            $prettyTargetMageVal = ($targetConstraint === null) ? null : $targetConstraint->getPrettyString();
-            $userConstraint = key_exists($pkg, $userLinkMap) ? $userLinkMap[$pkg]->getConstraint() : null;
-            $userVal = ($userConstraint === null) ? null : $userConstraint->__toString();
-            $prettyUserVal = ($userConstraint === null) ? null : $userConstraint->getPrettyString();
-
-            $action = $this->findResolution(
-                $field,
-                $originalMageVal,
-                $targetMageVal,
-                $userVal,
-                $prettyOriginalMageVal,
-                $prettyTargetMageVal,
-                $prettyUserVal
-            );
+            $action = $this->findLinkResolution($section, $pkg, $originalMageLinks, $targetMageLinks, $userLinks);
             if ($action == static::ADD_VAL) {
-                $adds[$pkg] = $targetLinkMap[$pkg];
+                $adds[$pkg] = $targetMageLinks[$pkg];
             } elseif ($action == static::REMOVE_VAL) {
                 $removes[] = $pkg;
             } elseif ($action == static::CHANGE_VAL) {
-                $changes[$pkg] = $targetLinkMap[$pkg];
+                $changes[$pkg] = $targetMageLinks[$pkg];
             }
         }
 
@@ -287,11 +280,26 @@ class DeltaResolver
             $this->console->labeledVerbose("Updating $section constraints: " . implode(', ', $prettyChanges));
         }
 
+        $enforcedOrder = [];
+        if ($verifyOrder) {
+            $enforcedOrder = $this->getLinkOrderOverride(
+                $section,
+                array_keys($originalMageLinks),
+                array_keys($targetMageLinks),
+                array_keys($userLinks)
+            );
+            if ($enforcedOrder !== []) {
+                $changed = true;
+                $prettyOrder = "   [\n      " . implode(",\n      ",  $enforcedOrder) . "\n   ]";
+                $this->console->labeledVerbose("Updating $section order:\n$prettyOrder");
+            }
+        }
+
         if ($changed) {
             $replacements = array_values($adds);
 
             /** @var Link $userLink */
-            foreach ($userLinkMap as $pkg => $userLink) {
+            foreach ($userLinks as $pkg => $userLink) {
                 if (in_array($pkg, $removes)) {
                     continue;
                 } elseif (key_exists($pkg, $changes)) {
@@ -300,6 +308,12 @@ class DeltaResolver
                     $replacements[] = $userLink;
                 }
             }
+
+            usort($replacements, $this->buildLinkOrderComparator(
+                $enforcedOrder,
+                array_keys($targetMageLinks),
+                array_keys($userLinks)
+            ));
 
             $newJson = [];
             /** @var Link $link */
@@ -349,37 +363,15 @@ class DeltaResolver
         $result = $userVal === null ? [] : $userVal;
 
         if (is_array($originalMageVal) && is_array($targetMageVal) && is_array($userVal)) {
-            $originalMageAssociativePart = [];
-            $originalMageFlatPart = [];
-            foreach ($originalMageVal as $key => $value) {
-                if (is_string($key)) {
-                    $originalMageAssociativePart[$key] = $value;
-                } else {
-                    $originalMageFlatPart[] = $value;
-                }
-            }
+            $originalMageAssociativePart = array_filter($originalMageVal, 'is_string', ARRAY_FILTER_USE_KEY);
+            $originalMageFlatPart = array_filter($originalMageVal, 'is_int', ARRAY_FILTER_USE_KEY);
 
-            $targetMageAssociativePart = [];
-            $targetMageFlatPart = [];
-            foreach ($targetMageVal as $key => $value) {
-                if (is_string($key)) {
-                    $targetMageAssociativePart[$key] = $value;
-                } else {
-                    $targetMageFlatPart[] = $value;
-                }
-            }
+            $targetMageAssociativePart = array_filter($targetMageVal, 'is_string', ARRAY_FILTER_USE_KEY);
+            $targetMageFlatPart = array_filter($targetMageVal, 'is_int', ARRAY_FILTER_USE_KEY);
 
-            $userAssociativePart = [];
-            $userFlatPart = [];
-            foreach ($userVal as $key => $value) {
-                if (is_string($key)) {
-                    $userAssociativePart[$key] = $value;
-                } else {
-                    $userFlatPart[] = $value;
-                }
-            }
+            $userAssociativePart = array_filter($userVal, 'is_string', ARRAY_FILTER_USE_KEY);
 
-            $associativeResult = array_filter($result, 'is_string', ARRAY_FILTER_USE_KEY);
+            $associativeResult = $userAssociativePart;
             $mageKeys = array_unique(
                 array_merge(array_keys($originalMageAssociativePart), array_keys($targetMageAssociativePart))
             );
@@ -417,7 +409,7 @@ class DeltaResolver
                 }
             }
 
-            $flatResult = array_filter($result, 'is_int', ARRAY_FILTER_USE_KEY);
+            $flatResult = array_filter($userVal, 'is_int', ARRAY_FILTER_USE_KEY);
             $flatAdds = array_diff(array_diff($targetMageFlatPart, $originalMageFlatPart), $flatResult);
             if ($flatAdds !== []) {
                 $valChanged = true;
@@ -456,17 +448,132 @@ class DeltaResolver
     }
 
     /**
-     * Helper function to convert a set of links to an associative array with target package names as keys
+     * Helper function to find the resolution action for a package constraint in the Link sections
      *
-     * @param Link[] $links
-     * @return array
+     * @param string $section
+     * @param string $pkg
+     * @param Link[] $originalLinkMap
+     * @param Link[] $targetLinkMap
+     * @param Link[] $userLinkMap
+     * @return string|null ADD_VAL|REMOVE_VAL|CHANGE_VAL to adjust the link constraint, null for no change
      */
-    protected function linksToMap($links)
+    protected function findLinkResolution($section, $pkg, $originalLinkMap, $targetLinkMap, $userLinkMap)
     {
-        $targets = array_map(function ($link) {
-            /** @var Link $link */
-            return $link->getTarget();
-        }, $links);
-        return array_combine($targets, $links);
+        $field = "$section:$pkg";
+        $originalConstraint = key_exists($pkg, $originalLinkMap) ? $originalLinkMap[$pkg]->getConstraint() : null;
+        $originalMageVal = ($originalConstraint === null) ? null : $originalConstraint->__toString();
+        $prettyOriginalMageVal = ($originalConstraint === null) ? null : $originalConstraint->getPrettyString();
+        $targetConstraint = key_exists($pkg, $targetLinkMap) ? $targetLinkMap[$pkg]->getConstraint() : null;
+        $targetMageVal = ($targetConstraint === null) ? null : $targetConstraint->__toString();
+        $prettyTargetMageVal = ($targetConstraint === null) ? null : $targetConstraint->getPrettyString();
+        $userConstraint = key_exists($pkg, $userLinkMap) ? $userLinkMap[$pkg]->getConstraint() : null;
+        $userVal = ($userConstraint === null) ? null : $userConstraint->__toString();
+        $prettyUserVal = ($userConstraint === null) ? null : $userConstraint->getPrettyString();
+
+        return $this->findResolution(
+            $field,
+            $originalMageVal,
+            $targetMageVal,
+            $userVal,
+            $prettyOriginalMageVal,
+            $prettyTargetMageVal,
+            $prettyUserVal
+        );
+    }
+
+    /**
+     * Get the order to use for a link section if local and target versions disagree
+     *
+     * @param string $section
+     * @param string[] $originalMageOrder
+     * @param string[] $targetMageOrder
+     * @param string[] $userOrder
+     * @return string[]
+     */
+    protected function getLinkOrderOverride($section, $originalMageOrder, $targetMageOrder, $userOrder)
+    {
+        $overrideOrder = [];
+
+        $conflictTargetOrder = array_values(array_intersect($targetMageOrder, $userOrder));
+        $conflictUserOrder = array_values(array_intersect($userOrder, $targetMageOrder));
+
+        // Check if the user's link order does not match the target section for links that appear in both
+        if ($conflictTargetOrder != $conflictUserOrder) {
+            $conflictOriginalOrder = array_values(array_intersect($originalMageOrder, $targetMageOrder));
+
+            // Check if the user's order is different than the target order because the order has changed between
+            // the original and target Magento versions
+            if ($conflictOriginalOrder !== $conflictUserOrder) {
+                $targetLabel = $this->retriever->getTargetLabel();
+                $userOrderDesc = "   [\n      " . implode(",\n      ", $conflictUserOrder) . "\n   ]";
+                $targetOrderDesc = "   [\n      " . implode(",\n      ",  $conflictTargetOrder) . "\n   ]";
+                $conflictDesc = "$targetLabel is trying to change the existing order of the $section section.\n" .
+                    "Local order:\n$userOrderDesc\n$targetLabel order:\n$targetOrderDesc";
+                $shouldOverride = $this->overrideUserValues;
+                if ($this->overrideUserValues) {
+                    $this->console->log($conflictDesc);
+                    $this->console->log(
+                        'Overriding local order due to --' . MageRootRequireCommand::OVERRIDE_OPT . '.'
+                    );
+                } else {
+                    $shouldOverride = $this->console->ask(
+                        "$conflictDesc\nWould you like to override the local order?"
+                    );
+                }
+
+                if (!$shouldOverride) {
+                    $this->console->comment("$conflictDesc but it will not be changed. Re-run using " .
+                        '--' . MageRootRequireCommand::OVERRIDE_OPT . ' or ' .
+                        '--' . MageRootRequireCommand::INTERACTIVE_OPT . ' to override with the Magento order.');
+                    $overrideOrder = $conflictUserOrder;
+                } else {
+                    $overrideOrder = $conflictTargetOrder;
+                }
+            } else {
+                $overrideOrder = $conflictTargetOrder;
+            }
+        }
+
+        return $overrideOrder;
+    }
+
+    /**
+     * Construct a comparison function to use in sorting an array of links by prioritized order lists
+     *
+     * @param string[] $overrideOrder
+     * @param string[] $targetMageOrder
+     * @param string[] $userOrder
+     * @return \Closure
+     */
+    protected function buildLinkOrderComparator($overrideOrder, $targetMageOrder, $userOrder)
+    {
+        $prioritizedOrderings = [$overrideOrder, $targetMageOrder, $userOrder];
+
+        return function ($link1, $link2) use ($prioritizedOrderings) {
+            /**
+             * @var Link $link1
+             * @var Link $link2
+             */
+            $package1 = $link1->getTarget();
+            $package2 = $link2->getTarget();
+
+            // Check each ordering array to see if it contains both links and if so use their positions to sort
+            // If the ordering array does not contain both links, try the next one
+            foreach ($prioritizedOrderings as $sortOrder) {
+                $index1 = array_search($package1, $sortOrder);
+                $index2 = array_search($package2, $sortOrder);
+                if ($index1 !== false && $index2 !== false) {
+                    if ($index1 == $index2) {
+                        return 0;
+                    } else {
+                        return $index1 < $index2 ? -1 : 1;
+                    }
+                }
+            }
+
+            // None of the ordering arrays contain both elements, so their relative positions in the sorted array
+            // do not matter
+            return 0;
+        };
     }
 }

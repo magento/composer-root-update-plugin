@@ -79,7 +79,9 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
         $result = $updater->getJsonChanges();
 
         $this->assertLinksEqual($this->expectedNoOverride->getRequires(), $result['require']);
+        $this->assertLinksOrdered($this->expectedNoOverride->getRequires(), $result['require']);
         $this->assertLinksEqual($this->expectedNoOverride->getDevRequires(), $result['require-dev']);
+        $this->assertLinksOrdered($this->expectedNoOverride->getDevRequires(), $result['require-dev']);
         $this->assertEquals($this->expectedNoOverride->getAutoload(), $result['autoload']);
         $this->assertEquals($this->expectedNoOverride->getDevAutoload(), $result['autoload-dev']);
         $this->assertLinksEqual($this->expectedNoOverride->getConflicts(), $result['conflict']);
@@ -96,7 +98,9 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
         $result = $updater->getJsonChanges();
 
         $this->assertLinksEqual($this->expectedWithOverride->getRequires(), $result['require']);
+        $this->assertLinksOrdered($this->expectedWithOverride->getRequires(), $result['require']);
         $this->assertLinksEqual($this->expectedWithOverride->getDevRequires(), $result['require-dev']);
+        $this->assertLinksOrdered($this->expectedWithOverride->getDevRequires(), $result['require-dev']);
         $this->assertEquals($this->expectedWithOverride->getAutoload(), $result['autoload']);
         $this->assertEquals($this->expectedWithOverride->getDevAutoload(), $result['autoload-dev']);
         $this->assertLinksEqual($this->expectedWithOverride->getConflicts(), $result['conflict']);
@@ -113,9 +117,22 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
          */
         $baseRoot = new RootPackage('magento/project-community-edition', '1.0.0.0', '1.0.0');
         $baseRoot->setRequires([
-            new Link('root/pkg', 'magento/product-community-edition', new Constraint('==', '1.0.0'), null, '1.0.0'),
-            new Link('root/pkg', PluginDefinition::PACKAGE_NAME, new Constraint('==', '1.0.0.0')),
-            new Link('root/pkg', 'vendor/package1', new Constraint('==', '1.0.0'), null, '1.0.0')
+            'magento/product-community-edition' => new Link(
+                'root/pkg', 'magento/product-community-edition',
+                new Constraint('==', '1.0.0'), null, '1.0.0'
+            ),
+            PluginDefinition::PACKAGE_NAME => new Link(
+                'root/pkg',
+                PluginDefinition::PACKAGE_NAME,
+                new Constraint('==', '1.0.0.0')
+            ),
+            'vendor/package1' => new Link(
+                'root/pkg',
+                'vendor/package1',
+                new Constraint('==', '1.0.0'),
+                null,
+                '1.0.0'
+            )
         ]);
         $baseRoot->setDevRequires($this->createLinks(2, 'vendor/dev-package'));
         $baseRoot->setAutoload(['psr-4' => ['Magento\\' => 'src/Magento/']]);
@@ -128,11 +145,26 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
 
         $targetRoot = new RootPackage('magento/project-community-edition', '2.0.0.0', '2.0.0');
         $targetRoot->setRequires([
-            new Link('root/pkg', 'magento/product-community-edition', new Constraint('==', '2.0.0'), null, '2.0.0'),
-            new Link('root/pkg', PluginDefinition::PACKAGE_NAME, new Constraint('==', '1.0.0.0')),
-            new Link('root/pkg', 'vendor/package1', new Constraint('==', '2.0.0'), null, '2.0.0')
+            'magento/product-community-edition' => new Link(
+                'root/pkg',
+                'magento/product-community-edition',
+                new Constraint('==', '2.0.0'),
+                null,
+                '2.0.0'
+            ),
+            PluginDefinition::PACKAGE_NAME => new Link(
+                'root/pkg',
+                PluginDefinition::PACKAGE_NAME,
+                new Constraint('==', '1.0.0.0')
+            ),
+            'vendor/package1' => new Link(
+                'root/pkg',
+                'vendor/package1',
+                new Constraint('==', '2.0.0'),
+                null, '2.0.0'
+            )
         ]);
-        $targetRoot->setDevRequires($this->createLinks(1, 'vendor/dev-package'));
+        $targetRoot->setDevRequires(array_merge($this->createLinks(1, 'vendor/dev-package-new'), $this->createLinks(2, 'vendor/dev-package')));
         $targetRoot->setAutoload(['psr-4' => [
             'Magento\\' => 'src/Magento/',
             'Zend\\Mvc\\Controller\\'=> 'setup/src/Zend/Mvc/Controller/'
@@ -146,9 +178,24 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
 
         $installRoot = new RootPackage('magento/project-community-edition', '1.0.0.0', '1.0.0');
         $installRoot->setRequires([
-            new Link('root/pkg', 'magento/product-community-edition', new Constraint('==', '2.0.0'), null, '2.0.0'),
-            new Link('root/pkg', PluginDefinition::PACKAGE_NAME, new Constraint('==', '1.0.0.0')),
-            new Link('root/pkg', 'vendor/package1', new Constraint('==', '1.0.0'), null, '1.0.0')
+            'magento/product-community-edition' => new Link(
+                'root/pkg',
+                'magento/product-community-edition',
+                new Constraint('==', '2.0.0'),
+                null,
+                '2.0.0'
+            ),
+            PluginDefinition::PACKAGE_NAME => new Link(
+                'root/pkg',
+                PluginDefinition::PACKAGE_NAME,
+                new Constraint('==', '1.0.0.0')
+            ),
+            'vendor/package1' => new Link(
+                'root/pkg',
+                'vendor/package1',
+                new Constraint('==', '1.0.0'),
+                null, '1.0.0'
+            )
         ]);
         $installRoot->setDevRequires($baseRoot->getDevRequires());
         $installRoot->setAutoload(array_merge($baseRoot->getAutoload(), ['files' => 'app/etc/Register.php']));
@@ -179,8 +226,10 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
             'Magento\\Sniffs\\' => 'dev/tests/framework/Magento/Sniffs/',
             'Magento\\Tools\\' => 'dev/tools/Magento/Tools2/'
         ]]);
+        /** @var Link $newConflict */
+        $newConflict = array_values($targetRoot->getConflicts())[2];
         $expectedNoOverride->setConflicts(
-            array_merge($this->installRoot->getConflicts(), [$targetRoot->getConflicts()[2]])
+            array_merge($this->installRoot->getConflicts(), [$newConflict->getTarget() => $newConflict])
         );
         $noOverrideExtra = $targetRoot->getExtra();
         $noOverrideExtra['extra-key1'] = $this->installRoot->getExtra()['extra-key1'];
