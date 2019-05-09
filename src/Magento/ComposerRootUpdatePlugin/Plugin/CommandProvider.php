@@ -10,9 +10,6 @@ use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 use Magento\ComposerRootUpdatePlugin\Plugin\Commands\MageRootRequireCommand;
 use Magento\ComposerRootUpdatePlugin\Plugin\Commands\UpdatePluginNamespaceCommands;
 
-/**
- * Class CommandProvider
- */
 class CommandProvider implements CommandProviderCapability
 {
     /**

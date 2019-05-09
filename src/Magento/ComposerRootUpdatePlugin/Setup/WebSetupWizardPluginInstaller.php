@@ -17,9 +17,6 @@ use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Plugin\PluginDefinition;
 
-/**
- * Class WebSetupWizardPluginInstaller
- */
 class WebSetupWizardPluginInstaller
 {
     /**
@@ -123,7 +120,7 @@ class WebSetupWizardPluginInstaller
      * @param Composer $composer
      * @param string $filePath
      * @param string $pluginVersion
-     * @return boolean
+     * @return bool
      * @throws Exception
      */
     public function updateSetupWizardPlugin($composer, $filePath, $pluginVersion)

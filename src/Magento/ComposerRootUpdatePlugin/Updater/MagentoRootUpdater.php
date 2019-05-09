@@ -12,11 +12,6 @@ use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\ComposerRootUpdatePlugin\Plugin\PluginDefinition;
 
-/**
- * Class MagentoRootUpdater
- *
- *
- */
 class MagentoRootUpdater
 {
     /**
@@ -52,11 +47,11 @@ class MagentoRootUpdater
      * Look ahead to the target Magento version and execute any changes to the root composer.json file in-memory
      *
      * @param RootPackageRetriever $retriever
-     * @param boolean $overrideOption
-     * @param boolean $ignorePlatformReqs
+     * @param bool $overrideOption
+     * @param bool $ignorePlatformReqs
      * @param string $phpVersion
      * @param string $stability
-     * @return boolean Returns true if updates were necessary and prepared successfully
+     * @return bool Returns true if updates were necessary and prepared successfully
      */
     public function runUpdate(
         $retriever,

@@ -10,9 +10,6 @@ use Composer\Package\Link;
 use Composer\Semver\Constraint\Constraint;
 use ReflectionClass;
 
-/**
- * Class UpdatePluginTestCase
- */
 abstract class UpdatePluginTestCase extends \PHPUnit\Framework\TestCase
 {
     /**

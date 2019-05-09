@@ -12,9 +12,6 @@ use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Plugin\Commands\MageRootRequireCommand;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 
-/**
- * Class ConflictResolver
- */
 class ConflictResolver
 {
     /**
@@ -30,7 +27,7 @@ class ConflictResolver
     protected $console;
     
     /**
-     * @var boolean $overrideUserValues
+     * @var bool $overrideUserValues
      */
     protected $overrideUserValues;
 
@@ -63,7 +60,7 @@ class ConflictResolver
      * ConflictResolver constructor.
      *
      * @param Console $console
-     * @param boolean $overrideUserValues
+     * @param bool $overrideUserValues
      * @param RootPackageRetriever $retriever
      * @return void
      */

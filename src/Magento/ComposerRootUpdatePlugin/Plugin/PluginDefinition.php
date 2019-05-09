@@ -13,7 +13,7 @@ use Composer\Installer\PackageEvent;
 use Composer\IO\IOInterface;
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 use Composer\Plugin\Capable;
-use Composer\Plugin\PluginInterface;;
+use Composer\Plugin\PluginInterface;
 use Magento\ComposerRootUpdatePlugin\Setup\WebSetupWizardPluginInstaller;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 

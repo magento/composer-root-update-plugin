@@ -15,9 +15,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-/**
- * Class RootUpdateCommandTest
- */
 class MageRootRequireCommandTest extends UpdatePluginTestCase
 {
     /**

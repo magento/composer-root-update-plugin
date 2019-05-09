@@ -12,9 +12,6 @@ use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\ComposerRootUpdatePlugin\UpdatePluginTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
-/**
- * Class ConflictResolverTest
- */
 class ConflictResolverTest extends UpdatePluginTestCase
 {
     /**
