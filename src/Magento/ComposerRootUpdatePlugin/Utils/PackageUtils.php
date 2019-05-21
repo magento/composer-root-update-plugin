@@ -57,7 +57,7 @@ class PackageUtils
      *
      * @param Composer $composer
      * @param string $packageMatcher
-     * @return Link|boolean
+     * @return Link|bool
      */
     static public function findRequire($composer, $packageMatcher)
     {
@@ -84,7 +84,7 @@ class PackageUtils
      * Is the given constraint strict or does it allow multiple versions
      *
      * @param string $constraint
-     * @return boolean
+     * @return bool
      */
     static public function isConstraintStrict($constraint)
     {

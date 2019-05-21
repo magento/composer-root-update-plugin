@@ -234,7 +234,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
      * @param InputInterface $input
      * @param string $targetEdition
      * @param string $targetConstraint
-     * @return boolean Returns true if updates were necessary and prepared successfully
+     * @return bool Returns true if updates were necessary and prepared successfully
      */
     protected function runUpdate($updater, $input, $targetEdition, $targetConstraint)
     {

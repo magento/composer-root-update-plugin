@@ -35,12 +35,12 @@ abstract class ExtendableRequireCommand extends RequireCommand
     protected $jsonFile;
 
     /**
-     * @var boolean $mageNewlyCreated
+     * @var bool $mageNewlyCreated
      */
     protected $mageNewlyCreated;
 
     /**
-     * @var boolean|string $mageComposerBackup
+     * @var bool|string $mageComposerBackup
      */
     protected $mageComposerBackup;
 

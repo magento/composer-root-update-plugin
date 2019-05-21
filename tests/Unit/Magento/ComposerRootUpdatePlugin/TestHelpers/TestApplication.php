@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TestApplication extends \Composer\Console\Application
 {
     /**
-     * @var boolean
+     * @var bool
      */
     private $shouldRun = false;
 
@@ -38,7 +38,7 @@ class TestApplication extends \Composer\Console\Application
     /**
      * Set whether or not doRunCommand should actually be run or not
      *
-     * @param boolean $shouldRun
+     * @param bool $shouldRun
      * @return void
      */
     public function setShouldRun($shouldRun)

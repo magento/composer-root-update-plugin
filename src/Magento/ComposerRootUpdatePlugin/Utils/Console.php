@@ -42,7 +42,7 @@ class Console
     protected $verboseLabel;
 
     /**
-     * @var boolean $interactive
+     * @var bool $interactive
      */
     protected $interactive;
 
@@ -50,7 +50,7 @@ class Console
      * Console constructor.
      *
      * @param IOInterface $io
-     * @param boolean $interactive
+     * @param bool $interactive
      * @param string $verboseLabel
      * @return void
      */
@@ -78,7 +78,7 @@ class Console
     /**
      * Whether or not ask() should interactively ask the question or just return the default value
      *
-     * @param boolean $interactive
+     * @param bool $interactive
      * @return void
      */
     public function setInteractive($interactive)
@@ -92,8 +92,8 @@ class Console
      * If the console is not interactive, instead do not ask and just return the default
      *
      * @param string $question
-     * @param boolean $default
-     * @return boolean
+     * @param bool $default
+     * @return bool
      */
     public function ask($question, $default = false)
     {

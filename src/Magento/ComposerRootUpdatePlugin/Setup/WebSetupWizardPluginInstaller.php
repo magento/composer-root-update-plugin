@@ -123,7 +123,7 @@ class WebSetupWizardPluginInstaller
      * @param Composer $composer
      * @param string $filePath
      * @param string $pluginVersion
-     * @return boolean
+     * @return bool
      * @throws Exception
      */
     public function updateSetupWizardPlugin($composer, $filePath, $pluginVersion)

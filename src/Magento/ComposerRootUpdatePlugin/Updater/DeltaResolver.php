@@ -30,7 +30,7 @@ class DeltaResolver
     protected $console;
     
     /**
-     * @var boolean $overrideUserValues
+     * @var bool $overrideUserValues
      */
     protected $overrideUserValues;
 
@@ -63,7 +63,7 @@ class DeltaResolver
      * DeltaResolver constructor.
      *
      * @param Console $console
-     * @param boolean $overrideUserValues
+     * @param bool $overrideUserValues
      * @param RootPackageRetriever $retriever
      * @return void
      */

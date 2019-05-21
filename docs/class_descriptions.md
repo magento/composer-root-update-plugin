@@ -109,9 +109,16 @@ Classes in this namespace deal with installing the plugin inside the project's `
   
 When the Web Setup Wizard runs an upgrade operation, it first tries to validate the upgrade by copying the `composer.json` file into the `var` directory and attempting a dry-run upgrade. However, because it only copies the `composer.json` file and not any of the other code in the installation (including the plugin's root installation in `vendor`), the plugin will not function for this dry run. In order to enable the plugin, it needs to already be present in `var/vendor`, where the Wizard's `composer require` for the validation will find it.
 
+#### [**AbstractModuleOperation**](../src/Magento/ComposerRootUpdatePlugin/Setup/AbstractModuleOperation.php)
+
+This abstract class allows extending Magento module operation classes to trigger [WebSetupWizardPluginInstaller::doVarInstall()](#websetupwizardplugininstaller).
+
+ - **`doVarInstall()`**
+   - Helper method for extending classes to setup and call `WebSetupWizardPluginInstaller::doVarInstall()`
+
 #### **[InstallData](../src/Magento/ComposerRootUpdatePlugin/Setup/InstallData.php)/[RecurringData](../src/Magento/ComposerRootUpdatePlugin/Setup/RecurringData.php)/[UpgradeData](../src/Magento/ComposerRootUpdatePlugin/Setup/UpgradeData.php)**
 
-These are Magento module setup classes to trigger [WebSetupWizardPluginInstaller::doVarInstall()](#websetupwizardplugininstaller) on `bin/magento setup` commands. Specifically, this is necessary when the `bin/magento setup:uninstall` and `bin/magento setup:install` commands are run, which would otherwise remove the plugin from the `var` directory without triggering the Composer package events that would normally install the plugin there.
+These are Magento module setup classes to trigger `AbstractModuleOperation::doVarInstall()` on `bin/magento setup` commands. Specifically, this is necessary when the `bin/magento setup:uninstall` and `bin/magento setup:install` commands are run, which would otherwise remove the plugin from the `var` directory without triggering the Composer package events that would normally install the plugin there.
      
 #### [**WebSetupWizardPluginInstaller**](../src/Magento/ComposerRootUpdatePlugin/Setup/WebSetupWizardPluginInstaller.php)
 

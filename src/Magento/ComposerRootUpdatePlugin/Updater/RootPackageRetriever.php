@@ -47,7 +47,7 @@ class RootPackageRetriever
     protected $originalRootPackage;
 
     /**
-     * @var boolean $fetchedOriginal
+     * @var bool $fetchedOriginal
      */
     protected $fetchedOriginal;
 
@@ -57,7 +57,7 @@ class RootPackageRetriever
     protected $targetRootPackage;
 
     /**
-     * @var boolean $fetchedTarget
+     * @var bool $fetchedTarget
      */
     protected $fetchedTarget;
 
@@ -135,8 +135,8 @@ class RootPackageRetriever
     /**
      * Get the project package that should be used as the basis for Magento root comparisons
      *
-     * @param boolean $overrideOption
-     * @return PackageInterface|boolean
+     * @param bool $overrideOption
+     * @return PackageInterface|bool
      */
     public function getOriginalRootPackage($overrideOption)
     {
@@ -231,10 +231,10 @@ class RootPackageRetriever
      *
      * @param string $edition
      * @param string $constraint
-     * @param boolean $ignorePlatformReqs
+     * @param bool $ignorePlatformReqs
      * @param string $phpVersion
      * @param string $preferredStability
-     * @return PackageInterface|boolean Best root package candidate or false if no valid packages found
+     * @return PackageInterface|bool Best root package candidate or false if no valid packages found
      */
     protected function fetchMageRootFromRepo(
         $edition,
