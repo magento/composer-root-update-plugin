@@ -30,17 +30,18 @@ There are four paths through the plugin code that cover two main pieces of funct
 2. Composer recognizes `require` as the command passed to the executable and finds `MageRootRequireCommand` as the command object registered under that name
 3. Composer calls `MageRootRequireCommand::execute()`
 4. `MageRootRequireCommand::execute()` backs up the user's `composer.json` file through [ExtendableRequireCommand::parseComposerJsonFile()](class_descriptions.md#extendablerequirecommand)
-5. `MageRootRequireCommand::execute()` checks the `composer require` arguments for a `magento/product` package, and if it finds one it calls `MageRootRequireCommand::runUpdate()`
-6. `MageRootRequireCommand::runUpdate()` calls [MagentoRootUpdater::runUpdate()](class_descriptions.md#magentorootupdater)
-7. `MageRootRequireCommand::runUpdate()` calls [DeltaResolver::resolveRootDeltas()](class_descriptions.md#deltaresolver)
-8. `DeltaResolver::resolveRootDeltas()` uses [RootPackageRetriever](class_descriptions.md#rootpackageretriever) to obtain the Composer [Package](https://getcomposer.org/apidoc/master/Composer/Package/Package.html) objects for the root `composer.json` files from the default installation of the existing edition and version, the target edition and version supplied to the `composer require` call, and the user's current installation including any customizations they have made 
-9. `DeltaResolver::resolveRootDeltas()` iterates over the fields in `composer.json` to determine any values that need to be updated to match the root `composer.json` file of the new Magento edition/version
+5. `MageRootRequireCommand::execute()` calls `MageRootRequireCommand::runUpdate()`
+6. `MageRootRequireCommand::runUpdate()` calls `MageRootRequireCommand::parseMageRequirement()` to check the `composer require` arguments for a `magento/product` package
+7. If a `magento/product` package is found in the command arguments, it calls [MagentoRootUpdater::runUpdate()](class_descriptions.md#magentorootupdater)
+8. `MagentoRootUpdater::runUpdate()` calls [DeltaResolver::resolveRootDeltas()](class_descriptions.md#deltaresolver)
+9. `DeltaResolver::resolveRootDeltas()` uses [RootPackageRetriever](class_descriptions.md#rootpackageretriever) to obtain the Composer [Package](https://getcomposer.org/apidoc/master/Composer/Package/Package.html) objects for the root `composer.json` files from the default installation of the existing edition and version, the target edition and version supplied to the `composer require` call, and the user's current installation including any customizations they have made 
+10. `DeltaResolver::resolveRootDeltas()` iterates over the fields in `composer.json` to determine any values that need to be updated to match the root `composer.json` file of the new Magento edition/version
    1. To find these values, it compares the values for each field in the default project for the installed edition/version with the project for the target edition/version (`DeltaResolver::findResolution()`)
    2. If a value has changed in the target, it checks that field in the user's customized root `composer.json` file to see if it has been overwritten with a custom value
    3. If the user customized the value, the conflict will be resolved according to the specified resolution strategy: use the expected Magento value, use the user's custom value, or prompt the user to specify which value should be used
-10. If `resolveRootDeltas()` found values that need to change, `MageRootRequireCommand::execute()` calls `MagentoRootUpdater::writeUpdatedComposerJson()` to apply those changes 
-11. `MageRootRequireCommand::execute()` calls the native `RequireCommand::execute()` function, which will now use the updated root `composer.json` file if the plugin made changes
-12. If the `RequireCommand::execute()` call fails after the plugin makes changes, `MageRootRequireCommand::execute()` calls `ExtendableRequireCommand::revertMageComposerFile()` to restore the `composer.json` file to its original state
+11. If `resolveRootDeltas()` found values that need to change, `MageRootRequireCommand::runUpdate()` calls `MagentoRootUpdater::writeUpdatedComposerJson()` to apply those changes 
+12. `MageRootRequireCommand::execute()` calls the native `RequireCommand::execute()` function, which will now use the updated root `composer.json` file if the plugin made changes
+13. If the `RequireCommand::execute()` call fails after the plugin makes changes, `MageRootRequireCommand::execute()` calls `ExtendableRequireCommand::revertMageComposerFile()` to restore the `composer.json` file to its original state
 
 ***
 

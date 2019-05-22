@@ -122,7 +122,7 @@ class Console
     {
         if ($format) {
             $formatClose = str_replace('<', '</', $format);
-            $message = "${format}${message}${formatClose}";
+            $message = "$format$message$formatClose";
         }
         $this->getIO()->writeError($message, true, $verbosity);
     }
@@ -182,7 +182,7 @@ class Console
     ) {
         if ($format) {
             $formatClose = str_replace('<', '</', $format);
-            $message = "${format}${message}${formatClose}";
+            $message = "$format$message$formatClose";
         }
         if ($label === null) {
             $label = $this->verboseLabel;

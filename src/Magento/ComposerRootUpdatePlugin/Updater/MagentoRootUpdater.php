@@ -28,6 +28,11 @@ class MagentoRootUpdater
     protected $composer;
 
     /**
+     * @var PackageUtils $pkgUtils;
+     */
+    protected $pkgUtils;
+
+    /**
      * @var array $jsonChanges Json-writable sections of composer.json that have been updated
      */
     protected $jsonChanges;
@@ -43,6 +48,7 @@ class MagentoRootUpdater
     {
         $this->console = $console;
         $this->composer = $composer;
+        $this->pkgUtils = new PackageUtils($console, $composer);
         $this->jsonChanges = [];
     }
 
@@ -65,21 +71,21 @@ class MagentoRootUpdater
     ) {
         $composer = $this->composer;
 
-        if (!PackageUtils::findRequire($composer, PluginDefinition::PACKAGE_NAME)) {
+        if (!$this->pkgUtils->findRequire($composer, PluginDefinition::PACKAGE_NAME)) {
             // If the plugin requirement has been removed but we're still trying to run (code still existing in the
             // vendor directory), return without executing.
             return false;
         }
 
-        $originalEdition = $retriever->getOriginalEdition();
-        $originalVersion = $retriever->getOriginalVersion();
-        $prettyOriginalVersion = $retriever->getPrettyOriginalVersion();
+        $origEdition = $retriever->getOriginalEdition();
+        $origVersion = $retriever->getOriginalVersion();
+        $prettyOrigVersion = $retriever->getPrettyOriginalVersion();
 
         if (!$retriever->getTargetRootPackage($ignorePlatformReqs, $phpVersion, $stability)) {
             throw new \RuntimeException('Magento root updates cannot run without a valid target package');
         }
 
-        if ($originalEdition == $retriever->getTargetEdition() && $originalVersion == $retriever->getTargetVersion()) {
+        if ($origEdition == $retriever->getTargetEdition() && $origVersion == $retriever->getTargetVersion()) {
             $this->console->labeledVerbose(
                 'The Magento product requirement matched the current installation; no root updates are required'
             );
@@ -93,7 +99,7 @@ class MagentoRootUpdater
 
         $this->console->setVerboseLabel($retriever->getTargetLabel());
         $this->console->labeledVerbose(
-            "Base Magento project package version: magento/project-$originalEdition-edition $prettyOriginalVersion"
+            "Base Magento project package version: magento/project-$origEdition-edition $prettyOrigVersion"
         );
 
         $resolver = new DeltaResolver($this->console, $overrideOption, $retriever);

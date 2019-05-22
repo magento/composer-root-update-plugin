@@ -26,6 +26,11 @@ class WebSetupWizardPluginInstaller
      * @var Console $console
      */
     protected $console;
+
+    /**
+     * @var PackageUtils $pkgUtils
+     */
+    protected $pkgUtils;
     
     /**
      * WebSetupWizardPluginInstaller constructor.
@@ -36,6 +41,7 @@ class WebSetupWizardPluginInstaller
     public function __construct($console)
     {
         $this->console = $console;
+        $this->pkgUtils = new PackageUtils($console);
     }
 
     /**
@@ -87,8 +93,7 @@ class WebSetupWizardPluginInstaller
             return 1;
         }
 
-        $factory = new Factory();
-        $composer = $factory->createComposer($this->console->getIO(), $path, true, null, true);
+        $composer = (new Factory())->createComposer($this->console->getIO(), $path, true, null, true);
         $locker = $composer->getLocker();
         if ($locker->isLocked()) {
             $pkg = $locker->getLockedRepository()->findPackage(PluginDefinition::PACKAGE_NAME, '*');
@@ -133,12 +138,12 @@ class WebSetupWizardPluginInstaller
         // If in ./var already or Magento or the plugin is missing from composer.json, do not install in var
         if (!preg_match('/\/composer\.json$/', $filePath) ||
             preg_match('/\/var\/composer\.json$/', $filePath) ||
-            !PackageUtils::findRequire(
+            !$this->pkgUtils->findRequire(
                 $composer,
                 '/magento\/product-(' . PackageUtils::OPEN_SOURCE_PKG_EDITION . '|' .
                 PackageUtils::COMMERCE_PKG_EDITION . ')-edition/'
             ) ||
-            !PackageUtils::findRequire($composer, $packageName)) {
+            !$this->pkgUtils->findRequire($composer, $packageName)) {
             return false;
         }
 
@@ -165,23 +170,15 @@ class WebSetupWizardPluginInstaller
 
         $this->console->info("Installing \"$packageName: $pluginVersion\" for the Web Setup Wizard");
 
-        if (!file_exists($var)) {
-            mkdir($var);
-        }
-        if (!is_writable($var)) {
-            throw new FilesystemException(
-                "Could not install \"$packageName: $pluginVersion\" for the Web Setup Wizard; $var is not writable."
-            );
-        }
-
-        $tmpDir = tempnam($var, "composer-plugin_tmp.");
         $exception = null;
+        $tmpDir = null;
         try {
-            unlink($tmpDir);
-            mkdir($tmpDir);
+            $tmpDir = $this->getTempDir($var, $packageName, $pluginVersion);
 
-            $tmpComposer = $this->createPluginComposer($tmpDir, $pluginVersion, $composer);
-            $install = Installer::create($this->console->getIO(), $tmpComposer);
+            $install = Installer::create(
+                $this->console->getIO(),
+                $this->createPluginComposer($tmpDir, $pluginVersion, $composer)
+            );
             $install
                 ->setDumpAutoloader(true)
                 ->setRunScripts(false)
@@ -201,6 +198,32 @@ class WebSetupWizardPluginInstaller
         }
 
         return true;
+    }
+
+    /**
+     * Creates a temporary directory inside var/ and returns the directory path
+     *
+     * @param string $varDir
+     * @param string $packageName
+     * @param string $pluginVersion
+     * @return bool|string
+     * @throws FilesystemException
+     */
+    private function getTempDir($varDir, $packageName, $pluginVersion)
+    {
+        if (!file_exists($varDir)) {
+            mkdir($varDir);
+        }
+        if (!is_writable($varDir)) {
+            throw new FilesystemException(
+                "Could not install \"$packageName: $pluginVersion\" for the Web Setup Wizard; $varDir is not writable."
+            );
+        }
+
+        $tmpDir = tempnam($varDir, "composer-plugin_tmp.");
+        $madeDir = $tmpDir ? unlink($tmpDir) && mkdir($tmpDir) : false;
+
+        return $madeDir ? $tmpDir : false;
     }
 
     /**

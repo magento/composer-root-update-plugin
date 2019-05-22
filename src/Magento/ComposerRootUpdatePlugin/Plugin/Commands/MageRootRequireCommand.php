@@ -38,14 +38,24 @@ class MageRootRequireCommand extends ExtendableRequireCommand
     private $commandName;
 
     /**
-     * @var RootPackageRetriever $retriever
-     */
-    protected $retriever;
-
-    /**
      * @var Console $console
      */
     protected $console;
+
+    /**
+     * @var PackageUtils $pkgUtils
+     */
+    protected $pkgUtils;
+
+    /**
+     * @var string $package
+     */
+    protected $package;
+
+    /**
+     * @var string $constraint
+     */
+    protected $constraint;
 
     /**
      * Call the parent setApplication method but also change the command's name to update
@@ -67,13 +77,12 @@ class MageRootRequireCommand extends ExtendableRequireCommand
      *
      * @return void
      */
-    public function configure()
+    protected function configure()
     {
         parent::configure();
 
         $origName = $this->getName();
         $this->commandName = $origName;
-        $this->retriever = null;
         $this->setName('require-magento-root')
             ->addOption(
                 static::SKIP_OPT,
@@ -137,67 +146,16 @@ class MageRootRequireCommand extends ExtendableRequireCommand
      *
      * @throws \Exception
      */
-    public function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $updater = null;
         $this->console = new Console($this->getIO(), $input->getOption(static::INTERACTIVE_OPT));
+        $this->pkgUtils = new PackageUtils($this->console);
         $fileParsed = $this->parseComposerJsonFile($input);
         if ($fileParsed !== 0) {
             return $fileParsed;
         }
 
-        $updater = null;
-        $didUpdate = false;
-        $package = null;
-        $constraint = null;
-        $requires = $input->getArgument('packages');
-        if (!$this->mageNewlyCreated &&
-            !$input->getOption('no-plugins') &&
-            !$input->getOption('dev') &&
-            !$input->getOption(static::SKIP_OPT)
-        ) {
-            if (!$requires) {
-                $requires = $this->getRequirementsInteractive();
-                $input->setArgument('packages', $requires);
-            }
-
-            $requires = $this->normalizeRequirements($requires);
-            foreach ($requires as $requirement) {
-                $pkgEdition = PackageUtils::getMagentoProductEdition($requirement['name']);
-                if ($pkgEdition) {
-                    $edition = $pkgEdition;
-                    $package = "magento/product-$edition-edition";
-                    $constraint = isset($requirement['version']) ? $requirement['version'] : '*';
-
-                    // Found a Magento product in the command arguments; try to run the updater
-                    try {
-                        $updater = new MagentoRootUpdater($this->console, $this->getComposer());
-                        $didUpdate = $this->runUpdate($updater, $input, $edition, $constraint);
-                    } catch (\Exception $e) {
-                        $editionLabel = $edition == PackageUtils::COMMERCE_PKG_EDITION ? 'Commerce' : 'Open Source';
-                        $label = "Magento $editionLabel $constraint";
-                        $this->revertMageComposerFile("Update of composer.json with $label changes failed");
-                        $this->console->log($e->getMessage());
-                        $didUpdate = false;
-                    }
-
-                    break;
-                }
-            }
-
-            if ($didUpdate) {
-                // Update composer.json before the native execute(), as it reads the file instead of an in-memory object
-                $label = $this->retriever->getTargetLabel();
-                $this->console->info("Updating composer.json for $label ...");
-                try {
-                    $updater->writeUpdatedComposerJson();
-                } catch (\Exception $e) {
-                    $this->revertMageComposerFile("Update of composer.json with $label changes failed");
-                    $this->console->log($e->getMessage());
-                    $didUpdate = false;
-                }
-            }
-        }
+        $didUpdate = $this->runUpdate($input);
 
         // Run the native command functionality
         $errorCode = 0;
@@ -211,9 +169,10 @@ class MageRootRequireCommand extends ExtendableRequireCommand
         if ($didUpdate && $errorCode !== 0) {
             // If the native execute() didn't succeed, revert the Magento changes to the composer.json file
             $this->revertMageComposerFile('The native \'composer ' . $this->commandName . '\' command failed');
-            if ($constraint && !PackageUtils::isConstraintStrict($constraint)) {
+            if ($this->constraint && !$this->pkgUtils->isConstraintStrict($this->constraint)) {
+                $constraintLabel = $this->package . ': ' . $this->constraint;
                 $this->console->comment(
-                    "Recommended: Use a specific Magento version constraint instead of \"$package: $constraint\""
+                    "Recommended: Use a specific Magento version constraint instead of \"$constraintLabel\""
                 );
             }
         }
@@ -226,44 +185,100 @@ class MageRootRequireCommand extends ExtendableRequireCommand
     }
 
     /**
-     * Call MagentoRootUpdater::runUpdate() according to CLI options
+     * Checks the package arguments for a Magento product package and run the update if one is found
      *
-     * @see MagentoRootUpdater::runUpdate()
+     * Returns true if an update was attempted successfully
      *
-     * @param MagentoRootUpdater $updater
      * @param InputInterface $input
-     * @param string $targetEdition
-     * @param string $targetConstraint
-     * @return bool Returns true if updates were necessary and prepared successfully
+     * @return bool
      */
-    protected function runUpdate($updater, $input, $targetEdition, $targetConstraint)
+    protected function runUpdate($input)
     {
-        $overrideOriginalEdition = $input->getOption(static::BASE_EDITION_OPT);
-        $overrideOriginalVersion = $input->getOption(static::BASE_VERSION_OPT);
-        if ($overrideOriginalEdition) {
-            $overrideOriginalEdition = strtolower($overrideOriginalEdition);
-            if ($overrideOriginalEdition !== 'open source' && $overrideOriginalEdition !== 'commerce') {
-                $opt = '--' . static::BASE_EDITION_OPT;
-                throw new InvalidOptionException("'$opt' accepts only 'Open Source' or 'Commerce'");
+        $didUpdate = false;
+        $this->parseMageRequirement($input);
+        if ($this->package) {
+            $edition = $this->pkgUtils->getMagentoProductEdition($this->package);
+            $overrideEdition = $input->getOption(static::BASE_EDITION_OPT);
+            $overrideVersion = $input->getOption(static::BASE_VERSION_OPT);
+            if ($overrideEdition) {
+                $overrideEdition = strtolower($overrideEdition);
+                if ($overrideEdition !== 'open source' && $overrideEdition !== 'commerce') {
+                    $opt = '--' . static::BASE_EDITION_OPT;
+                    throw new InvalidOptionException("'$opt' accepts only 'Open Source' or 'Commerce'");
+                }
+                $overrideEdition = $overrideEdition == 'open source' ?
+                    PackageUtils::OPEN_SOURCE_PKG_EDITION : PackageUtils::COMMERCE_PKG_EDITION;
             }
-            $overrideOriginalEdition = $overrideOriginalEdition = 'open source' ?
-                PackageUtils::OPEN_SOURCE_PKG_EDITION : PackageUtils::COMMERCE_PKG_EDITION;
+
+            $updater = new MagentoRootUpdater($this->console, $this->getComposer());
+            $retriever = new RootPackageRetriever(
+                $this->console,
+                $this->getComposer(),
+                $edition,
+                $this->constraint,
+                $overrideEdition,
+                $overrideVersion
+            );
+
+            try {
+                $didUpdate = $updater->runUpdate(
+                    $retriever,
+                    $input->getOption(static::OVERRIDE_OPT),
+                    $input->getOption('ignore-platform-reqs'),
+                    $this->phpVersion,
+                    $this->preferredStability
+                );
+            } catch (\Exception $e) {
+                $label = $retriever->getTargetLabel();
+                $this->revertMageComposerFile("Update of composer.json with $label changes failed");
+                $this->console->log($e->getMessage());
+                $didUpdate = false;
+            }
+
+            if ($didUpdate) {
+                $label = $retriever->getTargetLabel();
+                try {
+                    $this->console->info("Updating composer.json for $label ...");
+                    $updater->writeUpdatedComposerJson();
+                } catch (\Exception $e) {
+                    $this->revertMageComposerFile("Update of composer.json with $label changes failed");
+                    $this->console->log($e->getMessage());
+                    $didUpdate = false;
+                }
+            }
         }
 
-        $this->retriever = new RootPackageRetriever(
-            $this->console,
-            $this->getComposer(),
-            $targetEdition,
-            $targetConstraint,
-            $overrideOriginalEdition,
-            $overrideOriginalVersion
-        );
-        return $updater->runUpdate(
-            $this->retriever,
-            $input->getOption(static::OVERRIDE_OPT),
-            $input->getOption('ignore-platform-reqs'),
-            $this->phpVersion,
-            $this->preferredStability
-        );
+        return $didUpdate;
+    }
+
+    /**
+     * Check if the plugin should run and parses the package arguments for a magento/product requirement if so
+     *
+     * @param InputInterface $input
+     * @return void
+     */
+    protected function parseMageRequirement(&$input)
+    {
+        $edition = null;
+        if (!$this->mageNewlyCreated &&
+            !$input->getOption('dev') &&
+            !$input->getOption('no-plugins') &&
+            !$input->getOption(static::SKIP_OPT)) {
+            $requires = $input->getArgument('packages');
+            if (!$requires) {
+                $requires = $this->getRequirementsInteractive();
+                $input->setArgument('packages', $requires);
+            }
+
+            $requires = $this->normalizeRequirements($requires);
+            foreach ($requires as $requirement) {
+                $edition = $this->pkgUtils->getMagentoProductEdition($requirement['name']);
+                if ($edition) {
+                    $this->package = "magento/product-$edition-edition";
+                    $this->constraint = isset($requirement['version']) ? $requirement['version'] : '*';
+                    break;
+                }
+            }
+        }
     }
 }

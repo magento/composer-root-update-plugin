@@ -64,9 +64,11 @@ Extends the native [RequireCommand](https://getcomposer.org/apidoc/master/Compos
  - **`setApplication()`**
    - Overrides the command's name to `require` after the command registry is checked but before the command is actually added to the registry. This allows the command to replace the native `RequireCommand` instance that is normally associated with the `composer require` CLI command
  - **`execute()`**
-   - Wraps the native `RequireCommand::execute()` function with the Magento project update code if a Magento product package is found in the command's parameters
+   - Wraps the native `RequireCommand::execute()` function with the Magento project update code
  - **`runUpdate()`**
    - Calls [MagentoRootUpdater::runUpdate()](#magentorootupdater) after processing CLI options
+ - **`parseMagentoRequirement()`**
+   - Parses the CLI command arguments for a magento/product requirement
      
 #### [**Commands\UpdatePluginNamespaceCommands**](../src/Magento/ComposerRootUpdatePlugin/Plugin/Commands/UpdatePluginNamespaceCommands.php)
 
@@ -132,6 +134,8 @@ This class manages the plugin's self-installation inside the `var` directory to 
    - Called by `composer magento-update-plugin install` and the Magento module setup classes ([InstallData](#installdatarecurringdataupgradedata), [RecurringData](#installdatarecurringdataupgradedata), [UpgradeData](#installdatarecurringdataupgradedata))
  - **`updateSetupWizardPlugin()`**
    - Installs the plugin inside `var/vendor` where it can be found by the `composer require` command run by the Web Setup Wizard's validation check. This is accomplished by creating a dummy project directory with a `composer.json` file that requires only the plugin, installing it, then copying the resulting `vendor` directory to `var/vendor`
+ - **`getTempDir()`**
+   - Creates a temporary directory inside the `var` directory to use for the dummy plugin project in `updateSetupWizardPlugin()`
  - **`deletePath()`**
    - Recursively deletes a file or directory and all its contents
  - **`copyAndReplace()`**
@@ -155,15 +159,27 @@ This is accomplished by comparing `composer.json` fields between the original Ma
    - Entry point into the resolution functionality
    - Calls the relevant resolve function for each `composer.json` field that can be updated
  - **`findResolution()`**
-   - For an individual field value, compare the original Magento value to the target Magento value, and if a delta is found, check if the user's installation has a customized value for the field. If the user has changed the value, resolve the conflict according to the CLI command options: use the user's custom value, override with the target Magento value, or interactively ask the user which of the two values should be used
+   - For an individual field value, compare the original Magento value to the target Magento value, and if a delta is found, check if the user's installation has a customized value for the field then apply the appropriate resolution
+ - **`prettify()`**
+   - Formats a field value to be human-readable if a preset pretty value is not present
+ - **`solveIfConflict()`**
+   - If the user has a field value that conflicts with an expected delta, resolve the conflict according to the CLI command options: use the user's custom value, override with the target Magento value, or interactively ask the user which of the two values should be used
  - **`resolveLinkSection()`**
    - For a given `composer.json` section that consists of links to package versions/constraints (such as the `require` and `conflict` sections), call `findLinkResolution()` for each package constraint found in either the original Magento root or the target Magento root
+ - **`resolveLink()`**
+   - Helper function to call `findResolution()` for a particular package for use by `resolveLinkSection()`
+ - **`getConstraintValues()`**
+   - Helper function to get the raw and pretty forms of a link for comparison
+ - **`applyLinkChanges()`**
+   - Adjust the json values for a link section according to the resolutions calculated by `resolveLinkSection()`
  - **`resolveArraySection()`**
    - For a given `composer.json` section that consists of data that is not package links (such as the `"autoload"` or `"extra"` sections), call `resolveNestedArray()` and accept the new values if changes were made
  - **`resolveNestedArray()`**
    - Recursively processes changes to a `composer.json` value that could be a nested array, calling `findResolution()` for each "leaf" value found in either the original Magento root or the target Magento root
- - **`findLinkResolution()`**
-   - Helper function to call `findResolution()` for a particular package for use by `resolveLinkSection()`
+ - **`resolveFlatArray()`**
+   - Process changes to the non-associative portion of an array field value, treating it as an unordered set
+ - **`resolveAssociativeArray()`**
+   - Process changes to the associative portion of an array field value that could contain nested arrays
  - **`getLinkOrderOverride()`**
    - Determine the order to use for a link section when the user's order disagrees with the target Magento section order
  - **`buildLinkOrderComparator()`**
@@ -190,10 +206,12 @@ This class contains methods to retrieve Composer [Package](https://getcomposer.o
    - Returns the existing root project package, including all user customizations
  - **`fetchMageRootFromRepo()`**
    - Given a Magento edition and version constraint, fetch the best-fit Magento root project package from the Composer repository
- - **`parseOriginalVersionAndEditionFromLock()`**
+ - **`parseVersionAndEditionFromLock()`**
    - Inspect the `composer.lock` file for the currently-installed Magento product package and parse out the edition and version for use by `getOriginalRootPackage()`
- - **`getRootLocker()`**
-   - Helper function to get the [Locker](https://getcomposer.org/apidoc/master/Composer/Package/Locker.html) object for the `composer.lock` file in the project root directory. If the current working directory is `var` (which is the case for the Web Setup Wizard), instead use the `composer.lock` file in the parent directory
+ - **`getTargetLabel()`**
+   - Gets the formatted label for the target Magento version
+ - **`getOriginalLabel()`**
+   - Gets the formatted label for the originally-installed Magento version
 
 ***
 
@@ -222,7 +240,13 @@ Common package-related utility functions.
    - Extracts the package type (`product` or `project`) from a Magento package name
  - **`getMagentoProductEdition()`**
    - Extracts the package edition from a Magento product package name
+ - **`getEditionLabel()`**
+   - Translates package edition into the marketing edition label
  - **`findRequire()`**
    - Searches the `"require"` section of a [Composer](https://getcomposer.org/apidoc/master/Composer/Composer.html) object for a package link that fits the supplied name or matcher
  - **`isConstraintStrict()`**
    - Checks if a version constraint is strict or if it allows multiple versions (such as `~1.0` or `>= 1.5.3`)
+ - **`getLockedProduct()`**
+   - Gets the installed magento/product package from the composer.lock file if it exists
+ - **`getRootLocker()`**
+   - Helper function to get the [Locker](https://getcomposer.org/apidoc/master/Composer/Package/Locker.html) object for the `composer.lock` file in the project root directory. If the current working directory is `var` (which is the case for the Web Setup Wizard), instead use the `composer.lock` file in the parent directory

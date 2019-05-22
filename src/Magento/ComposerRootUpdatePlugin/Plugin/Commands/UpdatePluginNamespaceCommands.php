@@ -49,7 +49,7 @@ class UpdatePluginNamespaceCommands extends BaseCommand
     {
         $help = "The <info>%command.name% <operation></info> commands are operations specific to the\n" .
             "<info>magento/composer-root-update-plugin</info> functionality that do not belong to any native\n" .
-            "composer commands.\n\n" . static::describeOperations() . "\n";
+            "composer commands.\n\n" . $this->describeOperations() . "\n";
 
         $this->setName(static::NAME)
             ->setDescription('Operations specific to magento/composer-root-update-plugin')
@@ -63,20 +63,21 @@ class UpdatePluginNamespaceCommands extends BaseCommand
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return int
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->console = new Console($this->getIO());
         $operation = $input->getArgument('operation');
         if (empty($operation) || $operation == 'list') {
-            $this->console->log(static::describeOperations() . "\n");
+            $this->console->log($this->describeOperations() . "\n");
             return 0;
         }
         if ($operation == 'install') {
             $setupWizardInstaller = new WebSetupWizardPluginInstaller($this->console);
             return $setupWizardInstaller->doVarInstall();
         } else {
-            $this->console->error("'$operation' is not a supported operation for ".static::NAME);
+            $this->console->error("'$operation' is not a supported operation for " . static::NAME);
             return 1;
         }
     }
@@ -86,7 +87,7 @@ class UpdatePluginNamespaceCommands extends BaseCommand
      *
      * @return string
      */
-    private static function describeOperations()
+    protected function describeOperations()
     {
         $output = '<comment>Available operations:</comment>';
         foreach (static::$operations as $operation => $description) {

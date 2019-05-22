@@ -4,6 +4,8 @@
  * See COPYING.txt for license details.
  */
 
+// @codingStandardsIgnoreFile
+
 namespace Magento\ComposerRootUpdatePlugin\ComposerReimplementation;
 
 use Composer\Command\InitCommand;
@@ -144,6 +146,9 @@ abstract class ExtendableRequireCommand extends RequireCommand
      *
      * @return array
      * @throws \Exception
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     protected function getRequirementsInteractive()
     {

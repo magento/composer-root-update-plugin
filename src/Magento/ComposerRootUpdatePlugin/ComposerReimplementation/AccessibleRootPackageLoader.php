@@ -4,6 +4,8 @@
  * See COPYING.txt for license details.
  */
 
+// @codingStandardsIgnoreFile
+
 namespace Magento\ComposerRootUpdatePlugin\ComposerReimplementation;
 
 use Composer\Package\BasePackage;
@@ -28,8 +30,9 @@ class AccessibleRootPackageLoader
      * @param string $reqVersion
      * @param string $minimumStability
      * @return array
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    public static function extractStabilityFlags($reqName, $reqVersion, $minimumStability)
+    public function extractStabilityFlags($reqName, $reqVersion, $minimumStability)
     {
         $stabilityFlags = [];
         $stabilityMap = BasePackage::$stabilities;

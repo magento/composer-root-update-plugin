@@ -136,25 +136,31 @@ class DeltaResolverTest extends UpdatePluginTestCase
     public function testResolveNestedArrayNonArrayAdd()
     {
         $resolver = new DeltaResolver($this->console, false, $this->retriever);
-        $result = $resolver->resolveNestedArray('field', null, 'newVal', null);
+        $changed = false;
+        $result = $resolver->resolveNestedArray('field', null, 'newVal', null, $changed);
 
-        $this->assertEquals([true, 'newVal'], $result);
+        $this->assertTrue($changed);
+        $this->assertEquals('newVal', $result);
     }
 
     public function testResolveNestedArrayNonArrayRemove()
     {
         $resolver = new DeltaResolver($this->console, false, $this->retriever);
-        $result = $resolver->resolveNestedArray('field', 'oldVal', null, 'oldVal');
+        $changed = false;
+        $result = $resolver->resolveNestedArray('field', 'oldVal', null, 'oldVal', $changed);
 
-        $this->assertEquals([true, null], $result);
+        $this->assertTrue($changed);
+        $this->assertEquals(null, $result);
     }
 
     public function testResolveNestedArrayNonArrayChange()
     {
         $resolver = new DeltaResolver($this->console, false, $this->retriever);
-        $result = $resolver->resolveNestedArray('field', 'oldVal', 'newVal', 'oldVal');
+        $changed = false;
+        $result = $resolver->resolveNestedArray('field', 'oldVal', 'newVal', 'oldVal', $changed);
 
-        $this->assertEquals([true, 'newVal'], $result);
+        $this->assertTrue($changed);
+        $this->assertEquals('newVal', $result);
     }
 
     public function testResolveArrayMismatchedArray()

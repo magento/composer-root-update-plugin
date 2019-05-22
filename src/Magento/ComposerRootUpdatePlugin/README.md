@@ -16,7 +16,7 @@ The `magento/composer-root-update-plugin` package requires Composer version 1.8.
 
 To install the plugin, run the following commands in the Magento root directory.
     
-    composer require magento/composer-root-update-plugin ~1.0 --no-update
+    composer require magento/composer-root-update-plugin ~0.1 --no-update
     composer update 
 
 # Usage
@@ -128,23 +128,23 @@ For reference, these are the `"require"` and `"require-dev"` sections for defaul
 
 ### With `magento/composer-root-update-plugin`:
 
-In the project directory for a Magento Open Source 2.2.8 installation, a user runs `composer require magento/composer-root-update-plugin ~1.0 --no-update` and `composer update` before the Magento Open Source 2.3.1 upgrade commands. 
+In the project directory for a Magento Open Source 2.2.8 installation, a user runs `composer require magento/composer-root-update-plugin ~0.1 --no-update` and `composer update` before the Magento Open Source 2.3.1 upgrade commands. 
 
 ```
-$ composer require magento/composer-root-update-plugin ~1.0 --no-update
+$ composer require magento/composer-root-update-plugin ~0.1 --no-update
 ./composer.json has been updated
 $ composer update
 Loading composer repositories with package information
 Updating dependencies (including require-dev)
 Package operations: 1 install, 0 updates, 0 removals
-  - Installing magento/composer-root-update-plugin (1.0.0): Downloading (100%)         
-Installing "magento/composer-root-update-plugin: 1.0.0" for the Web Setup Wizard
+  - Installing magento/composer-root-update-plugin (0.1.0): Downloading (100%)         
+Installing "magento/composer-root-update-plugin: 0.1.0" for the Web Setup Wizard
 Loading composer repositories with package information
 Updating dependencies
 Package operations: 18 installs, 0 updates, 0 removals
   - Installing ...
   ...
-  - Installing magento/composer-root-update-plugin (1.0.0): Downloading (100%)
+  - Installing magento/composer-root-update-plugin (0.1.0): Downloading (100%)
 Writing lock file
 Generating autoload files
 Writing lock file
@@ -191,7 +191,7 @@ For reference, these are the `"require"` and `"require-dev"` sections from the `
    ```
     "require": {
         "magento/product-community-edition": "2.3.1",
-        "magento/composer-root-update-plugin": "~1.0"
+        "magento/composer-root-update-plugin": "~0.1"
     },
     "require-dev": {
         "allure-framework/allure-phpunit": "~1.2.0",
