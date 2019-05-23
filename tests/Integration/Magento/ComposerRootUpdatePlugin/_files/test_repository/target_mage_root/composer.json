@@ -1,0 +1,47 @@
+{
+    "name": "magento/project-community-edition",
+    "version": "1000.1000.1000",
+    "type": "project",
+    "description": "Test Magento root project composer.json for the target upgrade version",
+    "require": {
+        "magento/product-community-edition" : "1000.1000.1000",
+        "magento/composer-root-update-plugin": "*",
+        "vendor1/package1": "2.0.0"
+    },
+    "require-dev": {
+        "vendor1/dev-package1": "1.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Magento\\": "src/Magento",
+            "Zend\\Mvc\\Controller\\": "setup/src/Zend/Mvc/Controller/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Magento\\Sniffs\\": "dev/tests/framework/Magento/Sniffs/"
+        }
+    },
+    "conflict": {
+        "vendor1/conflicting1": "1.0.0",
+        "vendor1/conflicting2": "2.1.0",
+        "vendor1/conflicting3": "3.0.0"
+    },
+    "extra": {
+        "extra-key1": "target1",
+        "extra-key2": "target2",
+        "extra-key3": {
+            "a": "b"
+        }
+    },
+    "provide": {
+        "magento/sub-package1": "1.0.0",
+        "magento/sub-package2": "2.1.0",
+        "magento/sub-package3": "3.0.0"
+    },
+    "replace": {
+        "replaced/package1": "1.0.0",
+        "replaced/package2": "2.0.0",
+        "replaced/package3": "3.0.0"
+    }
+}

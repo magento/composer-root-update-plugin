@@ -1,0 +1,5 @@
+{
+  "name": "vendor1/package1",
+  "version": "1.0.0",
+  "description": "Test dummy composer.json for require library pre-upgrade"
+}

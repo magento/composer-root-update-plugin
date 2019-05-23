@@ -1,0 +1,41 @@
+{
+  "name": "root/pkg",
+  "version": "1.0.0",
+  "type": "project",
+  "require": {
+    "magento/product-community-edition" : "999.999.999",
+    "magento/composer-root-update-plugin": "*",
+    "vendor1/package1": "1.0.0"
+  },
+  "require-dev": {
+    "vendor1/dev-package1": "1.1.0",
+    "vendor1/dev-package2": "2.0.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Magento\\": "src/Magento",
+      "Zend\\Mvc\\Controller\\": "changed/Zend/Controller/"
+    },
+    "files": ["app/etc/Register.php"]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Magento\\Tools\\": "dev/tools/Magento/Tools2/"
+    }
+  },
+  "conflict": {
+    "vendor1/conflicting1": "1.0.0",
+    "vendor1/different-conflicting1": "1.0.0",
+    "vendor1/different-conflicting2": "2.0.0",
+    "vendor1/different-conflicting3": "3.0.0"
+  },
+  "extra": {
+    "extra-key1": "install1",
+    "extra-key2": "base2"
+  },
+  "suggest": {
+    "sample-data": "Suggested Sample Data 1.0.0",
+    "vendor/suggested": "Another Suggested Package"
+  },
+  "minimum-stability": "dev"
+}
