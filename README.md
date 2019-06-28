@@ -8,11 +8,11 @@ This is accomplished by comparing the root `composer.json` file for the Magento 
 
 # Getting Started
 
-For system requirements and installation instructions, see [README.md](src/magento/composerrootupdateplugin#gettingstarted) in the source directory.
+For system requirements and installation instructions, see [README.md](src/Magento/ComposerRootUpdatePlugin#getting-started) in the source directory.
 
 # Usage
 
-For a usage overview and example use cases, see [README.md](src/magento/composerrootupdateplugin#usage) in the source directory.
+For a usage overview and example use cases, see [README.md](src/Magento/ComposerRootUpdatePlugin#usage) in the source directory.
 
 # Developer documentation
 
