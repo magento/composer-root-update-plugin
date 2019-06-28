@@ -27,7 +27,7 @@ Because the plugin is hooking into the native `composer require` functionality d
 
 #### [**AccessibleRootPackageLoader**](../src/Magento/ComposerRootUpdatePlugin/ComposerReimplementation/AccessibleRootPackageLoader.php)
 
-**Composer class:** [RootPackageLoader](https://getcomposer.org/apidoc/master/Composer/Package/Loader/RootPackageLoader.htmlp)
+**Composer class:** [RootPackageLoader](https://getcomposer.org/apidoc/master/Composer/Package/Loader/RootPackageLoader.html)
 
  - **`extractStabilityFlags()`** -- see [RootPackageLoader::extractStabilityFlags()](https://github.com/composer/composer/blob/master/src/Composer/Package/Loader/RootPackageLoader.php)
    - Takes a package name, version, and minimum-stability setting and returns the stability level that should be used to find the package on a repository
