@@ -16,7 +16,7 @@ The `magento/composer-root-update-plugin` package requires Composer version 1.8.
 
 To install the plugin, run the following commands in the Magento root directory.
     
-    composer require magento/composer-root-update-plugin ~0.1 --no-update
+    composer require magento/composer-root-update-plugin:~0.1 --no-update
     composer update 
 
 # Usage
