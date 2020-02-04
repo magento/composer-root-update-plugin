@@ -6,7 +6,7 @@
   ],
   "type": "project",
   "require": {
-    "composer/composer": "<=1.8.0",
+    "composer/composer": "<=1.9.2",
     "composer-plugin-api": "^1.0"
   },
   "require-dev": {

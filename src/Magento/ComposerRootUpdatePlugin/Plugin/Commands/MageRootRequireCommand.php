@@ -117,6 +117,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
             );
 
         $mageHelp = '
+
 <comment>Magento Root Updates:</comment>
   With <info>' . PluginDefinition::PACKAGE_NAME . "</info> installed, <info>$origName</info> will also check for and
   execute any changes to the root composer.json file that exist between the Magento

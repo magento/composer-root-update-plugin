@@ -310,17 +310,21 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
             'getOriginalRootPackage',
             'getOriginalEdition',
             'getOriginalVersion',
+            'getOriginalLabel',
             'getTargetRootPackage',
             'getTargetEdition',
             'getTargetVersion',
+            'getTargetLabel',
             'getUserRootPackage'
         ]);
         $retriever->method('getOriginalRootPackage')->willReturn($baseRoot);
         $retriever->method('getOriginalEdition')->willReturn('community');
         $retriever->method('getOriginalVersion')->willReturn('1.0.0.0');
+        $retriever->method('getOriginalLabel')->willReturn('Magento Open Source 1.0.0');
         $retriever->method('getTargetRootPackage')->willReturn($targetRoot);
         $retriever->method('getTargetEdition')->willReturn('community');
         $retriever->method('getTargetVersion')->willReturn('2.0.0.0');
+        $retriever->method('getTargetLabel')->willReturn('Magento Open Source 2.0.0');
         $retriever->method('getUserRootPackage')->willReturn($installRoot);
 
         $this->retriever = $retriever;

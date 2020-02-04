@@ -469,10 +469,18 @@ class DeltaResolverTest extends UpdatePluginTestCase
         $this->console = new Console($this->io);
         $this->retriever = $this->createPartialMock(
             RootPackageRetriever::class,
-            ['getOriginalRootPackage', 'getTargetRootPackage', 'getUserRootPackage']
+            [
+                'getOriginalRootPackage',
+                'getOriginalLabel',
+                'getTargetRootPackage',
+                'getTargetLabel',
+                'getUserRootPackage'
+            ]
         );
         $this->retriever->method('getOriginalRootPackage')->willReturn(null);
+        $this->retriever->method('getOriginalLabel')->willReturn('Magento Open Source 1.0.0');
         $this->retriever->method('getTargetRootPackage')->willReturn(null);
+        $this->retriever->method('getTargetLabel')->willReturn('Magento Open Source 2.0.0');
         $this->retriever->method('getUserRootPackage')->willReturn(null);
     }
 }
