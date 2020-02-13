@@ -8,7 +8,7 @@
   ],
   "type": "composer-plugin",
   "require": {
-    "composer/composer": "<=1.9.2",
+    "composer/composer": "<=1.9.3",
     "composer-plugin-api": "^1.0"
   },
   "autoload": {
