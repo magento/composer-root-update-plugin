@@ -2,13 +2,13 @@
   "name": "magento/composer-root-update-plugin",
   "type": "composer-plugin",
   "description": "Plugin to look ahead for Magento project root changes when running composer update for new Magento versions",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "license": [
     "OSL-3.0",
     "AFL-3.0"
   ],
   "require": {
-    "composer/composer": "<=1.9.3",
+    "composer/composer": "<=1.10.6",
     "composer-plugin-api": "^1.0"
   },
   "suggest": {
