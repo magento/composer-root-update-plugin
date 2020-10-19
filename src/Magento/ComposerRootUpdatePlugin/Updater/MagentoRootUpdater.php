@@ -87,7 +87,7 @@ class MagentoRootUpdater
 
         if ($origEdition == $retriever->getTargetEdition() && $origVersion == $retriever->getTargetVersion()) {
             $this->console->labeledVerbose(
-                'The Magento product requirement matched the current installation; no root updates are required'
+                'The Magento metapackage requirement matched the current installation; no root updates are required'
             );
             return false;
         }
@@ -98,8 +98,9 @@ class MagentoRootUpdater
         }
 
         $this->console->setVerboseLabel($retriever->getTargetLabel());
+        $project = $this->pkgUtils->getProjectPackageName($origEdition);
         $this->console->labeledVerbose(
-            "Base Magento project package version: magento/project-$origEdition-edition $prettyOrigVersion"
+            "Base Magento project package version: $project $prettyOrigVersion"
         );
 
         $resolver = new DeltaResolver($this->console, $overrideOption, $retriever);

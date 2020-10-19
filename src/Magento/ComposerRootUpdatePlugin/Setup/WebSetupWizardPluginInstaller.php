@@ -102,7 +102,7 @@ class WebSetupWizardPluginInstaller
                 try {
                     $this->console->log(
                         "Checking for \"$packageName: $version\" for the Web Setup Wizard...",
-                        Console::VERBOSE
+                        Console::VERY_VERBOSE
                     );
                     $this->updateSetupWizardPlugin($composer, $path, $version);
                 } catch (Exception $e) {
@@ -125,6 +125,8 @@ class WebSetupWizardPluginInstaller
     /**
      * Update the plugin installation inside the ./var directory used by the Web Setup Wizard
      *
+     * Does not install the plugin inside var if on a cloud installation
+     *
      * @param Composer $composer
      * @param string $filePath
      * @param string $pluginVersion
@@ -134,6 +136,14 @@ class WebSetupWizardPluginInstaller
     public function updateSetupWizardPlugin($composer, $filePath, $pluginVersion)
     {
         $packageName = PluginDefinition::PACKAGE_NAME;
+
+        if ($this->pkgUtils->findRequire($composer, PackageUtils::CLOUD_METAPACKAGE) !== false) {
+            $this->console->log(
+                "Cloud installation detected, Not installing $packageName for the Web Setup Wizard",
+                Console::VERBOSE
+            );
+            return false;
+        }
 
         // If in ./var already or Magento or the plugin is missing from composer.json, do not install in var
         if (!preg_match('/\/composer\.json$/', $filePath) ||
@@ -170,7 +180,6 @@ class WebSetupWizardPluginInstaller
 
         $this->console->info("Installing \"$packageName: $pluginVersion\" for the Web Setup Wizard");
 
-        $exception = null;
         $tmpDir = null;
         try {
             $tmpDir = $this->getTempDir($var, $packageName, $pluginVersion);
@@ -187,14 +196,8 @@ class WebSetupWizardPluginInstaller
             $install->run();
 
             $this->copyAndReplace("$tmpDir/vendor", "$var/vendor");
-        } catch (Exception $e) {
-            $exception = $e;
-        }
-
-        $this->deletePath($tmpDir);
-
-        if ($exception !== null) {
-            throw $exception;
+        } finally {
+            $this->deletePath($tmpDir);
         }
 
         return true;

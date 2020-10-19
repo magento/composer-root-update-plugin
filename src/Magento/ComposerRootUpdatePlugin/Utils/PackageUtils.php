@@ -20,6 +20,8 @@ class PackageUtils
 {
     const OPEN_SOURCE_PKG_EDITION = 'community';
     const COMMERCE_PKG_EDITION = 'enterprise';
+    const CLOUD_PKG_EDITION = 'cloud';
+    const CLOUD_METAPACKAGE = 'magento/magento-cloud-metapackage';
 
     /**
      * @var Console $console
@@ -39,6 +41,7 @@ class PackageUtils
 
     /**
      * Helper function to extract the package type from a Magento product or project package name
+     * Not applicable for cloud project/metapackage.
      *
      * @param string $packageName
      * @return string|null 'product' or 'project' as applicable, null if not matching
@@ -55,19 +58,54 @@ class PackageUtils
     }
 
     /**
-     * Helper function to extract the edition from a package name if it is a Magento product
+     * Helper function to extract the edition from a package name if it is a Magento product or cloud metapackage
+     * For the purposes of this plugin, 'cloud' is treated as an edition
      *
      * @param string $packageName
-     * @return string|null OPEN_SOURCE_PKG_EDITION or COMMERCE_PKG_EDITION as applicable, null if not matching
+     * @return string|null CLOUD_PKG_EDITION, OPEN_SOURCE_PKG_EDITION, COMMERCE_PKG_EDITION, or null
      */
     public function getMagentoProductEdition($packageName)
     {
+        $packageName = strtolower($packageName);
+        if ($packageName == static::CLOUD_METAPACKAGE) {
+            return static::CLOUD_PKG_EDITION;
+        }
         $regex = '/^magento\/product-(?<edition>' . static::OPEN_SOURCE_PKG_EDITION . '|' .
             static::COMMERCE_PKG_EDITION . ')-edition$/';
         if ($packageName && preg_match($regex, $packageName, $matches)) {
             return $matches['edition'];
         } else {
             return null;
+        }
+    }
+
+    /**
+     * Helper function to construct the project package name from an edition
+     *
+     * @param string $edition
+     * @return string
+     */
+    public function getProjectPackageName($edition)
+    {
+        if (strtolower($edition) == static::CLOUD_PKG_EDITION) {
+            return 'magento/magento-cloud-template';
+        } else {
+            return strtolower("magento/project-$edition-edition");
+        }
+    }
+
+    /**
+     * Helper function to construct the product or cloud metapackage name from an edition
+     *
+     * @param string $edition
+     * @return string
+     */
+    public function getMetapackageName($edition)
+    {
+        if (strtolower($edition) == static::CLOUD_PKG_EDITION) {
+            return static::CLOUD_METAPACKAGE;
+        } else {
+            return strtolower("magento/product-$edition-edition");
         }
     }
 
@@ -83,6 +121,8 @@ class PackageUtils
             return 'Open Source';
         } elseif ($packageEdition == static::COMMERCE_PKG_EDITION) {
             return 'Commerce';
+        } elseif ($packageEdition == static::CLOUD_PKG_EDITION) {
+            return 'Cloud';
         }
         return null;
     }
@@ -129,32 +169,31 @@ class PackageUtils
     }
 
     /**
-     * Checks the composer.lock for the installed Magento product package
+     * Checks the composer.lock for the installed Magento metapackage
      *
      * @return PackageInterface|null
      */
     public function getLockedProduct()
     {
         $locker = $this->getRootLocker();
-        $lockedMageProduct = null;
-
+        $lockedMetapackage = null;
+        $lockedEdition = null;
         if ($locker) {
             $lockPackages = $locker->getLockedRepository()->getPackages();
-            $lockedMageProduct = null;
             foreach ($lockPackages as $lockedPackage) {
                 $pkgEdition = $this->getMagentoProductEdition($lockedPackage->getName());
-                if ($pkgEdition) {
-                    $lockedMageProduct = $lockedPackage;
 
-                    // Both editions exist for commerce, so stop at commerce to not overwrite with open source
-                    if ($pkgEdition == static::COMMERCE_PKG_EDITION) {
-                        break;
-                    }
+                if ($pkgEdition == static::CLOUD_PKG_EDITION ||
+                    $pkgEdition == static::COMMERCE_PKG_EDITION && $lockedEdition != static::CLOUD_PKG_EDITION ||
+                    $pkgEdition == static::OPEN_SOURCE_PKG_EDITION && $lockedEdition == null
+                ) {
+                    $lockedMetapackage = $lockedPackage;
+                    $lockedEdition = $pkgEdition;
                 }
             }
         }
 
-        return $lockedMageProduct;
+        return $lockedMetapackage;
     }
 
     /**

@@ -57,7 +57,7 @@ Classes in this namespace tie into the Composer library's code that handles plug
 
 This class is the entrypoint into the plugin's functionality from the `composer require` CLI command.
    
-Extends the native [RequireCommand](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html) functionality to add additional processing when run with a Magento product as one of the command's parameters.
+Extends the native [RequireCommand](https://getcomposer.org/apidoc/master/Composer/Command/RequireCommand.html) functionality to add additional processing when run with a Magento product or cloud metapackage as one of the command's parameters.
    
  - **`configure()`**
    - Add the options and description for the plugin functionality to those already configured in `RequireCommand` and sets the new command's name to a dummy unique value so it passes Composer's command registry check
@@ -67,8 +67,10 @@ Extends the native [RequireCommand](https://getcomposer.org/apidoc/master/Compos
    - Wraps the native `RequireCommand::execute()` function with the Magento project update code
  - **`runUpdate()`**
    - Calls [MagentoRootUpdater::runUpdate()](#magentorootupdater) after processing CLI options
+ - **`convertBaseEditionOption()`**
+   - Validates the base edition option value and convert it to the internal edition designator
  - **`parseMagentoRequirement()`**
-   - Parses the CLI command arguments for a magento/product requirement
+   - Parses the CLI command arguments for a Magento product or cloud metapackage requirement
      
 #### [**Commands\UpdatePluginNamespaceCommands**](../src/Magento/ComposerRootUpdatePlugin/Plugin/Commands/UpdatePluginNamespaceCommands.php)
 
@@ -199,15 +201,15 @@ This class runs [DeltaResolver::resolveRootDeltas()](#deltaresolver) if an updat
 This class contains methods to retrieve Composer [Package](https://getcomposer.org/apidoc/master/Composer/Package/Package.html) objects for the target Magento root project package, the original (default) Magento root project package for the currently-installed Magento version, and the currently-installed root project package (including all user customizations).
 
  - **`getOriginalRootPackage()`**
-   - Fetches the original (default) Magento root project package from the Composer repository
+   - Fetches the original (default) Magento root project package from the Composer repository or GitHub (in the case of cloud)
  - **`getTargetRootPackage()`**
-   - Fetches the target Magento root project package from the Composer repository
+   - Fetches the target Magento root project package from the Composer repository or GitHub (in the case of cloud)
  - **`getUserRootPackage()`**
    - Returns the existing root project package, including all user customizations
  - **`fetchMageRootFromRepo()`**
-   - Given a Magento edition and version constraint, fetch the best-fit Magento root project package from the Composer repository
+   - Given a Magento edition and version constraint, fetch the best-fit Magento root project package from the Composer repository or GitHub (in the case of cloud)
  - **`parseVersionAndEditionFromLock()`**
-   - Inspect the `composer.lock` file for the currently-installed Magento product package and parse out the edition and version for use by `getOriginalRootPackage()`
+   - Inspect the `composer.lock` file for the currently-installed Magento product or cloud metapackage and parse out the edition and version for use by `getOriginalRootPackage()`
  - **`getTargetLabel()`**
    - Gets the formatted label for the target Magento version
  - **`getOriginalLabel()`**
@@ -238,8 +240,14 @@ Common package-related utility functions.
    
  - **`getMagentoPackageType()`**
    - Extracts the package type (`product` or `project`) from a Magento package name
+   - Not applicable for cloud
  - **`getMagentoProductEdition()`**
-   - Extracts the package edition from a Magento product package name
+   - Extracts the package edition from a Magento product or cloud metapackage name
+   - For the purposes of this plugin, 'cloud' is considered an edition
+ - **`getProjectPackageName()`**
+   - Constructs the project package name from an edition
+ - **`getMetapackageName()`**
+   - Constructs the metapackage name from an edition
  - **`getEditionLabel()`**
    - Translates package edition into the marketing edition label
  - **`findRequire()`**
@@ -247,6 +255,6 @@ Common package-related utility functions.
  - **`isConstraintStrict()`**
    - Checks if a version constraint is strict or if it allows multiple versions (such as `~1.0` or `>= 1.5.3`)
  - **`getLockedProduct()`**
-   - Gets the installed magento/product package from the composer.lock file if it exists
+   - Gets the installed Magento product or cloud metapackage from the composer.lock file if it exists
  - **`getRootLocker()`**
    - Helper function to get the [Locker](https://getcomposer.org/apidoc/master/Composer/Package/Locker.html) object for the `composer.lock` file in the project root directory. If the current working directory is `var` (which is the case for the Web Setup Wizard), instead use the `composer.lock` file in the parent directory
