@@ -8,8 +8,8 @@
     "AFL-3.0"
   ],
   "require": {
-    "composer/composer": "<=1.10.15",
-    "composer-plugin-api": "^1.0"
+    "composer/composer": "<=1.10.19 || >=2.0.0 <=2.0.8",
+    "composer-plugin-api": "^1.0 || ^2.0"
   },
   "suggest": {
     "magento/framework": "Enables the Magento Composer Root Update Plugin's functionality for the Web Setup Wizard"

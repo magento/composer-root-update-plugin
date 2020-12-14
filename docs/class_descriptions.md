@@ -131,6 +131,8 @@ This class manages the plugin's self-installation inside the `var` directory to 
  - **`packageEvent()`**
    - When Composer installs or updates a required package, this method checks whether it was the plugin package that changed and calls `updateSetupWizardPlugin()` with the new version if so
    - Triggered by the events defined in [PluginDefinition::getSubscribedEvents()](#plugindefinition)
+ - **`processEvent()`**
+   - Helper method used by `packageEvent()` to run `updateSetupWizardPlugin()` when an appropriate [PackageEvent](https://getcomposer.org/apidoc/master/Composer/Installer/PackageEvent.html) is fired
  - **`doVarInstall()`**
    - Checks the `composer.lock` file the plugin and calls `updateSetupWizardPlugin()` with the version found there
    - Called by `composer magento-update-plugin install` and the Magento module setup classes ([InstallData](#installdatarecurringdataupgradedata), [RecurringData](#installdatarecurringdataupgradedata), [UpgradeData](#installdatarecurringdataupgradedata))

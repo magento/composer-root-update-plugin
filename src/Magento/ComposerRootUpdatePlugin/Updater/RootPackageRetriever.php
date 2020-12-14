@@ -14,7 +14,9 @@ use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Package\Version\VersionSelector;
+use Composer\Plugin\PluginInterface;
 use Composer\Repository\CompositeRepository;
+use Composer\Repository\RepositorySet;
 use Composer\Repository\VcsRepository;
 use Magento\ComposerRootUpdatePlugin\ComposerReimplementation\AccessibleRootPackageLoader;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
@@ -249,6 +251,7 @@ class RootPackageRetriever
         $phpVersion = null,
         $preferredStability = 'stable'
     ) {
+        $apiMajorVersion = explode('.', PluginInterface::PLUGIN_API_VERSION)[0];
         $packageName = $this->pkgUtils->getProjectPackageName($edition);
         $parsedConstraint = (new VersionParser())->parseConstraints($constraint);
 
@@ -263,26 +266,6 @@ class RootPackageRetriever
             : $minStability;
         $this->console->comment("Minimum stability for \"$packageName: $constraint\": $stability", IOInterface::DEBUG);
 
-        $pool = new Pool(
-            $stability,
-            $stabilityFlags,
-            [$packageName => $parsedConstraint]
-        );
-        if ($edition == PackageUtils::CLOUD_PKG_EDITION) {
-            // magento/magento-cloud-template exists on github, not the composer repo
-            $repoConfig = [
-                'url' => 'https://github.com/magento/magento-cloud',
-                'type' => 'vcs'
-            ];
-            $pool->addRepository(new VcsRepository(
-                $repoConfig,
-                $this->console->getIO(),
-                $this->composer->getConfig()
-                ));
-        } else {
-            $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
-        }
-
         $metapackageName = $this->pkgUtils->getMetapackageName($edition);
         if ($edition != PackageUtils::CLOUD_PKG_EDITION && !$this->pkgUtils->isConstraintStrict($constraint)) {
             $this->console->warning(
@@ -293,13 +276,65 @@ class RootPackageRetriever
         }
 
         $phpVersion = $ignorePlatformReqs ? null : $phpVersion;
+        $versionSelector = null;
+        $result = null;
+        if ($apiMajorVersion == '1') {
+            $pool = new Pool(
+                $stability,
+                $stabilityFlags,
+                [$packageName => $parsedConstraint]
+            );
+            if ($edition == PackageUtils::CLOUD_PKG_EDITION) {
+                // magento/magento-cloud-template exists on github, not the composer repo
+                $repoConfig = [
+                    'url' => 'https://github.com/magento/magento-cloud',
+                    'type' => 'vcs'
+                ];
+                $pool->addRepository(new VcsRepository(
+                    $repoConfig,
+                    $this->console->getIO(),
+                    $this->composer->getConfig()
+                ));
+            } else {
+                $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
+            }
 
-        $result = (new VersionSelector($pool))->findBestCandidate(
-            $packageName,
-            $constraint,
-            $phpVersion,
-            $preferredStability
-        );
+            $versionSelector = new VersionSelector($pool);
+            $result = ($versionSelector)->findBestCandidate(
+                $packageName,
+                $constraint,
+                $phpVersion,
+                $preferredStability
+            );
+        } elseif ($apiMajorVersion == '2') {
+            $repositorySet = new RepositorySet($minStability, $stabilityFlags);
+            if ($edition == PackageUtils::CLOUD_PKG_EDITION) {
+                // magento/magento-cloud-template exists on github, not the composer repo
+                $repoConfig = [
+                    'url' => 'https://github.com/magento/magento-cloud',
+                    'type' => 'vcs'
+                ];
+                $repositorySet->addRepository(new VcsRepository(
+                    $repoConfig,
+                    $this->console->getIO(),
+                    $this->composer->getConfig(),
+                    $this->composer->getLoop()->getHttpDownloader()
+                ));
+            } else {
+                $repositorySet->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
+            }
+
+            $versionSelector = new VersionSelector($repositorySet);
+            $result = ($versionSelector)->findBestCandidate(
+                $packageName,
+                $constraint,
+                $preferredStability
+            );
+        } else {
+            $this->console->error(
+                "Fetching Magento root composer failed; unrecognized composer plugin API version"
+            );
+        }
 
         if (!$result) {
             $err = "Could not find a Magento project package matching \"$metapackageName $constraint\"";
