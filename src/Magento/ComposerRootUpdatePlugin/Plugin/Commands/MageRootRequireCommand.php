@@ -107,13 +107,14 @@ class MageRootRequireCommand extends ExtendableRequireCommand
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Edition of the initially-installed Magento product to use as the base for composer.json updates. ' .
-                'Valid values: \'Open Source\', \'Commerce\''
+                'Not valid for Magento Cloud upgrades. Valid values: \'Open Source\', \'Commerce\''
             )
             ->addOption(
                 static::BASE_VERSION_OPT,
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Version of the initially-installed Magento product to use as the base for composer.json updates.'
+                'Version of the initially-installed Magento product or cloud metapackage to use as the base for ' .
+                'composer.json updates.'
             );
 
         $mageHelp = '
@@ -122,7 +123,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
   With <info>' . PluginDefinition::PACKAGE_NAME . "</info> installed, <info>$origName</info> will also check for and
   execute any changes to the root composer.json file that exist between the Magento
   project package corresponding to the currently-installed version and the project
-  for the target Magento product version if the package requirement has changed.
+  for the target Magento metapackage version if the package requirement has changed.
   
   By default, any changes that would affect values that have been customized in the
   existing installation will not be applied. Using <info>--" . static::OVERRIDE_OPT . '</info> will instead
@@ -186,7 +187,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
     }
 
     /**
-     * Checks the package arguments for a Magento product package and run the update if one is found
+     * Checks the package arguments for a Magento metapackage and run the update if one is found
      *
      * Returns true if an update was attempted successfully
      *
@@ -202,13 +203,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
             $overrideEdition = $input->getOption(static::BASE_EDITION_OPT);
             $overrideVersion = $input->getOption(static::BASE_VERSION_OPT);
             if ($overrideEdition) {
-                $overrideEdition = strtolower($overrideEdition);
-                if ($overrideEdition !== 'open source' && $overrideEdition !== 'commerce') {
-                    $opt = '--' . static::BASE_EDITION_OPT;
-                    throw new InvalidOptionException("'$opt' accepts only 'Open Source' or 'Commerce'");
-                }
-                $overrideEdition = $overrideEdition == 'open source' ?
-                    PackageUtils::OPEN_SOURCE_PKG_EDITION : PackageUtils::COMMERCE_PKG_EDITION;
+                $overrideEdition = $this->convertBaseEditionOption($edition, $overrideEdition);
             }
 
             $updater = new MagentoRootUpdater($this->console, $this->getComposer());
@@ -253,7 +248,31 @@ class MageRootRequireCommand extends ExtendableRequireCommand
     }
 
     /**
-     * Check if the plugin should run and parses the package arguments for a magento/product requirement if so
+     * Helper function to validate the BASE_EDITION_OPT option value and convert it to the internal edition
+     *
+     * 'open source' -> community, 'commerce' -> enterprise
+     *
+     * @param string $currentEdition
+     * @param string $overrideEdition
+     * @return string
+     */
+    protected function convertBaseEditionOption($currentEdition, $overrideEdition)
+    {
+        if ($currentEdition == PackageUtils::CLOUD_PKG_EDITION) {
+            $opt = '--' . static::BASE_EDITION_OPT;
+            throw new InvalidOptionException("'$opt' cannot be used when upgrading Magento Cloud");
+        }
+        $overrideEdition = strtolower($overrideEdition);
+        if ($overrideEdition !== 'open source' && $overrideEdition !== 'commerce') {
+            $opt = '--' . static::BASE_EDITION_OPT;
+            throw new InvalidOptionException("'$opt' accepts only 'Open Source' or 'Commerce'");
+        }
+        return $overrideEdition == 'open source' ?
+            PackageUtils::OPEN_SOURCE_PKG_EDITION : PackageUtils::COMMERCE_PKG_EDITION;
+    }
+
+    /**
+     * Check if the plugin should run and parses the package arguments for a magento metapackage requirement if so
      *
      * @param InputInterface $input
      * @return void
@@ -275,7 +294,7 @@ class MageRootRequireCommand extends ExtendableRequireCommand
             foreach ($requires as $requirement) {
                 $edition = $this->pkgUtils->getMagentoProductEdition($requirement['name']);
                 if ($edition) {
-                    $this->package = "magento/product-$edition-edition";
+                    $this->package = $requirement['name'];
                     $this->constraint = isset($requirement['version']) ? $requirement['version'] : '*';
                     break;
                 }

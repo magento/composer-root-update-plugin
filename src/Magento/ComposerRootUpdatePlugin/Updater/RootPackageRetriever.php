@@ -15,6 +15,7 @@ use Composer\Package\RootPackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Package\Version\VersionSelector;
 use Composer\Repository\CompositeRepository;
+use Composer\Repository\VcsRepository;
 use Magento\ComposerRootUpdatePlugin\ComposerReimplementation\AccessibleRootPackageLoader;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
@@ -157,10 +158,11 @@ class RootPackageRetriever
 
             if (!$originalRootPackage) {
                 if (!$originalEdition || !$originalVersion) {
-                    $this->console->warning('No Magento product package was found in the current installation.');
+                    $this->console->warning('No Magento metapackage was found in the current installation.');
                 } else {
+                    $metapackageName = $this->pkgUtils->getMetapackageName($originalEdition);
                     $this->console->warning('The Magento project package corresponding to the currently installed ' .
-                        "\"magento/product-$originalEdition-edition: $prettyOrigVersion\" package is unavailable.");
+                        "\"$metapackageName: $prettyOrigVersion\" package is unavailable.");
                 }
 
                 $overrideRoot = $overrideOption;
@@ -247,7 +249,7 @@ class RootPackageRetriever
         $phpVersion = null,
         $preferredStability = 'stable'
     ) {
-        $packageName = strtolower("magento/project-$edition-edition");
+        $packageName = $this->pkgUtils->getProjectPackageName($edition);
         $parsedConstraint = (new VersionParser())->parseConstraints($constraint);
 
         $minStability = $this->composer->getPackage()->getMinimumStability();
@@ -266,11 +268,25 @@ class RootPackageRetriever
             $stabilityFlags,
             [$packageName => $parsedConstraint]
         );
-        $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
+        if ($edition == PackageUtils::CLOUD_PKG_EDITION) {
+            // magento/magento-cloud-template exists on github, not the composer repo
+            $repoConfig = [
+                'url' => 'https://github.com/magento/magento-cloud',
+                'type' => 'vcs'
+            ];
+            $pool->addRepository(new VcsRepository(
+                $repoConfig,
+                $this->console->getIO(),
+                $this->composer->getConfig()
+                ));
+        } else {
+            $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
+        }
 
-        if (!$this->pkgUtils->isConstraintStrict($constraint)) {
+        $metapackageName = $this->pkgUtils->getMetapackageName($edition);
+        if ($edition != PackageUtils::CLOUD_PKG_EDITION && !$this->pkgUtils->isConstraintStrict($constraint)) {
             $this->console->warning(
-                "The version constraint \"magento/product-$edition-edition: $constraint\" is not exact; " .
+                "The version constraint \"$metapackageName: $constraint\" is not exact; " .
                 'the Magento root updater might not accurately determine the version to use according to other ' .
                 'requirements in this installation. It is recommended to use an exact version number.'
             );
@@ -286,7 +302,7 @@ class RootPackageRetriever
         );
 
         if (!$result) {
-            $err = "Could not find a Magento project package matching \"magento/product-$edition-edition $constraint\"";
+            $err = "Could not find a Magento project package matching \"$metapackageName $constraint\"";
             if ($phpVersion) {
                 $err = "$err for PHP version $phpVersion";
             }
@@ -297,7 +313,7 @@ class RootPackageRetriever
     }
 
     /**
-     * Gets the original Magento product edition and version from the package in composer.lock
+     * Gets the original Magento metapackage edition and version from the package in composer.lock
      *
      * @param string $overrideEdition
      * @param string $overrideVersion
