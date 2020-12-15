@@ -13,7 +13,6 @@ use Composer\Installer;
 use Composer\Installer\PackageEvent;
 use Composer\Json\JsonFile;
 use Composer\Package\PackageInterface;
-use Composer\Plugin\PluginInterface;
 use Exception;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
@@ -55,8 +54,8 @@ class WebSetupWizardPluginInstaller
     public function packageEvent($event)
     {
         $packageName = PluginDefinition::PACKAGE_NAME;
-        $apiMajorVersion = explode('.', PluginInterface::PLUGIN_API_VERSION)[0];
-        if ($apiMajorVersion == '1') {
+        $composerMajorVersion = explode('.', Composer::VERSION)[0];
+        if ($composerMajorVersion == '1') {
             $jobs = $event->getRequest()->getJobs();
             foreach ($jobs as $job) {
                 if (key_exists('packageName', $job) && $job['packageName'] === $packageName) {
@@ -67,7 +66,7 @@ class WebSetupWizardPluginInstaller
                     }
                 }
             }
-        } elseif ($apiMajorVersion == '2') {
+        } elseif ($composerMajorVersion == '2') {
             if (strpos($event->getOperation()->show(false), $packageName) !== false) {
                 $pkg = $event->getLocalRepo()->findPackage($packageName, '*');
                 if ($pkg !== null) {

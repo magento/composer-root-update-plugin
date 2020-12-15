@@ -210,6 +210,12 @@ This class contains methods to retrieve Composer [Package](https://getcomposer.o
    - Returns the existing root project package, including all user customizations
  - **`fetchMageRootFromRepo()`**
    - Given a Magento edition and version constraint, fetch the best-fit Magento root project package from the Composer repository or GitHub (in the case of cloud)
+ - **`findBestCandidate()`**
+   - Wrapper function around different versions of [VersionSelector::findBestCandidate()](https://getcomposer.org/apidoc/master/Composer/Package/Version/VersionSelector.html)
+ - **`findBestCandidateComposer1()`**
+   - Helper function to run [VersionSelector::findBestCandidate()](https://getcomposer.org/apidoc/master/Composer/Package/Version/VersionSelector.html) on Composer version 1.x.x
+ - **`findBestCandidateComposer2()`**
+   - Helper function to run [VersionSelector::findBestCandidate()](https://getcomposer.org/apidoc/master/Composer/Package/Version/VersionSelector.html) on Composer version 2.x.x
  - **`parseVersionAndEditionFromLock()`**
    - Inspect the `composer.lock` file for the currently-installed Magento product or cloud metapackage and parse out the edition and version for use by `getOriginalRootPackage()`
  - **`getTargetLabel()`**
