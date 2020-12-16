@@ -35,6 +35,22 @@ class PluginDefinition implements PluginInterface, Capable, EventSubscriberInter
     /**
      * @inheritdoc
      */
+    public function deactivate(Composer $composer, IOInterface $io)
+    {
+        // Method must exist
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function uninstall(Composer $composer, IOInterface $io)
+    {
+        // Method must exist
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function getCapabilities()
     {
         return [CommandProviderCapability::class => CommandProvider::class];

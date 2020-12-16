@@ -8,13 +8,14 @@ namespace Magento\ComposerRootUpdatePlugin\Updater;
 
 use Composer\Composer;
 use Composer\DependencyResolver\Pool;
-use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Package\Version\VersionSelector;
 use Composer\Repository\CompositeRepository;
+use Composer\Repository\PlatformRepository;
+use Composer\Repository\RepositorySet;
 use Composer\Repository\VcsRepository;
 use Magento\ComposerRootUpdatePlugin\ComposerReimplementation\AccessibleRootPackageLoader;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
@@ -250,7 +251,7 @@ class RootPackageRetriever
         $preferredStability = 'stable'
     ) {
         $packageName = $this->pkgUtils->getProjectPackageName($edition);
-        $parsedConstraint = (new VersionParser())->parseConstraints($constraint);
+        $phpVersion = $ignorePlatformReqs ? null : $phpVersion;
 
         $minStability = $this->composer->getPackage()->getMinimumStability();
         if (!$minStability) {
@@ -258,30 +259,6 @@ class RootPackageRetriever
         }
         $rootPackageLoader = new AccessibleRootPackageLoader();
         $stabilityFlags = $rootPackageLoader->extractStabilityFlags($packageName, $constraint, $minStability);
-        $stability = key_exists($packageName, $stabilityFlags)
-            ? array_search($stabilityFlags[$packageName], BasePackage::$stabilities)
-            : $minStability;
-        $this->console->comment("Minimum stability for \"$packageName: $constraint\": $stability", IOInterface::DEBUG);
-
-        $pool = new Pool(
-            $stability,
-            $stabilityFlags,
-            [$packageName => $parsedConstraint]
-        );
-        if ($edition == PackageUtils::CLOUD_PKG_EDITION) {
-            // magento/magento-cloud-template exists on github, not the composer repo
-            $repoConfig = [
-                'url' => 'https://github.com/magento/magento-cloud',
-                'type' => 'vcs'
-            ];
-            $pool->addRepository(new VcsRepository(
-                $repoConfig,
-                $this->console->getIO(),
-                $this->composer->getConfig()
-                ));
-        } else {
-            $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
-        }
 
         $metapackageName = $this->pkgUtils->getMetapackageName($edition);
         if ($edition != PackageUtils::CLOUD_PKG_EDITION && !$this->pkgUtils->isConstraintStrict($constraint)) {
@@ -292,16 +269,18 @@ class RootPackageRetriever
             );
         }
 
-        $phpVersion = $ignorePlatformReqs ? null : $phpVersion;
-
-        $result = (new VersionSelector($pool))->findBestCandidate(
+        $bestCandidate = $this->findBestCandidate(
             $packageName,
+            $edition,
             $constraint,
-            $phpVersion,
-            $preferredStability
+            $minStability,
+            $stabilityFlags,
+            $preferredStability,
+            $ignorePlatformReqs,
+            $phpVersion
         );
 
-        if (!$result) {
+        if (!$bestCandidate) {
             $err = "Could not find a Magento project package matching \"$metapackageName $constraint\"";
             if ($phpVersion) {
                 $err = "$err for PHP version $phpVersion";
@@ -309,7 +288,168 @@ class RootPackageRetriever
             $this->console->error($err);
         }
 
-        return $result;
+        return $bestCandidate;
+    }
+
+    /**
+     * Wrapper functions around different versions of VersionSelector::findBestCandidate()
+     *
+     * @param string $packageName
+     * @param string $edition
+     * @param string $constraint
+     * @param string $minStability
+     * @param array $stabilityFlags
+     * @param string $preferredStability
+     * @param bool $ignorePlatformReqs
+     * @param string $phpVersion
+     * @return PackageInterface|false
+     *
+     * @see VersionSelector::findBestCandidate()
+     */
+    protected function findBestCandidate(
+        $packageName,
+        $edition,
+        $constraint,
+        $minStability,
+        $stabilityFlags,
+        $preferredStability,
+        $ignorePlatformReqs,
+        $phpVersion
+    ) {
+        $composerMajorVersion = explode('.', Composer::VERSION)[0];
+        $bestCandidate = null;
+        if ($composerMajorVersion == '1') {
+            $bestCandidate = $this->findBestCandidateComposer1(
+                $packageName,
+                $edition,
+                $constraint,
+                $minStability,
+                $stabilityFlags,
+                $preferredStability,
+                $phpVersion
+            );
+        } elseif ($composerMajorVersion == '2') {
+            $bestCandidate = $this->findBestCandidateComposer2(
+                $packageName,
+                $edition,
+                $constraint,
+                $minStability,
+                $stabilityFlags,
+                $preferredStability,
+                $ignorePlatformReqs
+            );
+        } else {
+            $this->console->error(
+                "Fetching Magento root composer failed; unrecognized composer plugin API version"
+            );
+        }
+        return $bestCandidate;
+    }
+
+    /**
+     * Helper function to run VersionSelector::findBestCandidate() on Composer version 1.x.x
+     *
+     * @param string $packageName
+     * @param string $edition
+     * @param string $constraint
+     * @param string $minStability
+     * @param array $stabilityFlags
+     * @param string $preferredStability
+     * @param string $phpVersion
+     * @return PackageInterface|false
+     */
+    private function findBestCandidateComposer1(
+        $packageName,
+        $edition,
+        $constraint,
+        $minStability,
+        $stabilityFlags,
+        $preferredStability,
+        $phpVersion
+    ) {
+        $parsedConstraint = (new VersionParser())->parseConstraints($constraint);
+        $stability = key_exists($packageName, $stabilityFlags)
+            ? array_search($stabilityFlags[$packageName], BasePackage::$stabilities)
+            : $minStability;
+
+        $pool = new Pool(
+            $stability,
+            $stabilityFlags,
+            [$packageName => $parsedConstraint]
+        );
+
+        if ($edition == PackageUtils::CLOUD_PKG_EDITION) {
+            // magento/magento-cloud-template exists on github, not the composer repo
+            $repoConfig = [
+                'url' => 'https://github.com/magento/magento-cloud',
+                'type' => 'vcs'
+            ];
+            $pool->addRepository(new VcsRepository(
+                $repoConfig,
+                $this->console->getIO(),
+                $this->composer->getConfig()
+            ));
+        } else {
+            $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
+        }
+
+        return (new VersionSelector($pool))->findBestCandidate(
+            $packageName,
+            $constraint,
+            $phpVersion,
+            $preferredStability
+        );
+    }
+
+    /**
+     * Helper function to run VersionSelector::findBestCandidate() on Composer version 2.x.x
+     *
+     * @param string $packageName
+     * @param string $edition
+     * @param string $constraint
+     * @param string $minStability
+     * @param array $stabilityFlags
+     * @param string $preferredStability
+     * @param bool $ignorePlatformReqs
+     * @return PackageInterface|false
+     */
+    private function findBestCandidateComposer2(
+        $packageName,
+        $edition,
+        $constraint,
+        $minStability,
+        $stabilityFlags,
+        $preferredStability,
+        $ignorePlatformReqs
+    ) {
+        $platformOverrides = $this->composer->getConfig()->get('platform') ?: array();
+        $platformRepo = new PlatformRepository(array(), $platformOverrides);
+        $repositorySet = new RepositorySet($minStability, $stabilityFlags);
+
+        if ($edition == PackageUtils::CLOUD_PKG_EDITION) {
+            // magento/magento-cloud-template exists on github, not the composer repo
+            $repoConfig = [
+                'url' => 'https://github.com/magento/magento-cloud',
+                'type' => 'vcs'
+            ];
+            $repositorySet->addRepository(new VcsRepository(
+                $repoConfig,
+                $this->console->getIO(),
+                $this->composer->getConfig(),
+                $this->composer->getLoop()->getHttpDownloader()
+            ));
+        } else {
+            $repositorySet->addRepository(
+                new CompositeRepository($this->composer->getRepositoryManager()->getRepositories())
+            );
+        }
+
+        return (new VersionSelector($repositorySet, $platformRepo))->findBestCandidate(
+            $packageName,
+            $constraint,
+            $preferredStability,
+            $ignorePlatformReqs
+        );
     }
 
     /**
