@@ -1,5 +1,6 @@
 {
   "type": "project",
+  "name": "magento/composer-root-update-plugin",
   "description": "Git source for the Magento root update lookahead composer plugin",
   "license": [
     "OSL-3.0",

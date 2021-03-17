@@ -32,7 +32,7 @@ class WebSetupWizardPluginInstaller
      * @var PackageUtils $pkgUtils
      */
     protected $pkgUtils;
-    
+
     /**
      * WebSetupWizardPluginInstaller constructor.
      *
@@ -166,7 +166,14 @@ class WebSetupWizardPluginInstaller
 
         if ($this->pkgUtils->findRequire($composer, PackageUtils::CLOUD_METAPACKAGE) !== false) {
             $this->console->log(
-                "Cloud installation detected, Not installing $packageName for the Web Setup Wizard",
+                "Cloud installation detected, not installing $packageName for the Web Setup Wizard",
+                Console::VERBOSE
+            );
+            return false;
+        }
+        if ($this->pkgUtils->findRequire($composer, PackageUtils::MAGENTO_CLOUD_DOCKER_PKG) !== false) {
+            $this->console->log(
+                "Magento Cloud Docker installation detected, not installing $packageName for the Web Setup Wizard",
                 Console::VERBOSE
             );
             return false;
