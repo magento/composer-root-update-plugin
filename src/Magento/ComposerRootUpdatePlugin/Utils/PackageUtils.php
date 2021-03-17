@@ -22,6 +22,7 @@ class PackageUtils
     const COMMERCE_PKG_EDITION = 'enterprise';
     const CLOUD_PKG_EDITION = 'cloud';
     const CLOUD_METAPACKAGE = 'magento/magento-cloud-metapackage';
+    const MAGENTO_CLOUD_DOCKER_PKG = 'magento/magento-cloud-docker';
 
     /**
      * @var Console $console
