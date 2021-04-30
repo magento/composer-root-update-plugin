@@ -7,7 +7,7 @@
     "AFL-3.0"
   ],
   "require": {
-    "composer/composer": "<=1.10.20 || >=2.0.0 <=2.0.11",
+    "composer/composer": "<1.11 || >=2.0.0 <2.1",
     "composer-plugin-api": "^1.0 || ^2.0"
   },
   "require-dev": {
