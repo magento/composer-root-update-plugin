@@ -1,18 +1,16 @@
 {
   "name": "magento/composer-root-update-plugin",
   "type": "composer-plugin",
-  "description": "Plugin to look ahead for Magento project root changes when running composer update for new Magento versions",
-  "version": "1.1.2",
+  "description": "Plugin to look ahead for Magento Open Source or Adobe Commerce project root changes when running composer update for new magento/product or magento/magento-cloud metapackage versions",
+  "version": "2.0.0",
   "license": [
     "OSL-3.0",
     "AFL-3.0"
   ],
   "require": {
-    "composer/composer": "<=1.11 || >=2.0.0 <=2.1",
+    "php": "~7.3.0||~7.4.0",
+    "composer/composer": "^1.0 || ^2.0",
     "composer-plugin-api": "^1.0 || ^2.0"
-  },
-  "suggest": {
-    "magento/framework": "Enables the Magento Composer Root Update Plugin's functionality for the Web Setup Wizard"
   },
   "extra": {
     "class": "Magento\\ComposerRootUpdatePlugin\\Plugin\\PluginDefinition"
@@ -20,9 +18,6 @@
   "autoload": {
     "psr-4": {
       "Magento\\ComposerRootUpdatePlugin\\": ""
-    },
-    "files": [
-      "registration.php"
-    ]
+    }
   }
 }

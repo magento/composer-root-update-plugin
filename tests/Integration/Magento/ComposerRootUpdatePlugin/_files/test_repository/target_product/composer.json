@@ -1,5 +1,5 @@
 {
   "name": "magento/product-community-edition",
   "version": "1000.1000.1000",
-  "description": "Test Magento product dummy composer.json for target version"
+  "description": "Test product dummy composer.json for target version"
 }

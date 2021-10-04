@@ -8,6 +8,8 @@ namespace Magento\ComposerRootUpdatePlugin\Utils;
 
 use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
+use Exception;
+use InvalidArgumentException;
 
 /**
  * Singleton logger with console interaction methods
@@ -17,19 +19,19 @@ class Console
     /**
      * Log message formatting tags
      */
-    const FORMAT_INFO = '<info>';
-    const FORMAT_COMMENT = '<comment>';
-    const FORMAT_WARN = '<warning>';
-    const FORMAT_ERROR = '<error>';
+    public const FORMAT_INFO = '<info>';
+    public const FORMAT_COMMENT = '<comment>';
+    public const FORMAT_WARN = '<warning>';
+    public const FORMAT_ERROR = '<error>';
 
     /**
      * Verbosity levels copied from IOInterface for clarity
      */
-    const QUIET = IOInterface::QUIET;
-    const NORMAL = IOInterface::NORMAL;
-    const VERBOSE = IOInterface::VERBOSE;
-    const VERY_VERBOSE = IOInterface::VERY_VERBOSE;
-    const DEBUG = IOInterface::DEBUG;
+    public const QUIET = IOInterface::QUIET;
+    public const NORMAL = IOInterface::NORMAL;
+    public const VERBOSE = IOInterface::VERBOSE;
+    public const VERY_VERBOSE = IOInterface::VERY_VERBOSE;
+    public const DEBUG = IOInterface::DEBUG;
 
     /**
      * @var IOInterface $io
@@ -49,12 +51,12 @@ class Console
     /**
      * Console constructor.
      *
-     * @param IOInterface $io
+     * @param IOInterface|null $io
      * @param bool $interactive
-     * @param string $verboseLabel
+     * @param string|null $verboseLabel
      * @return void
      */
-    public function __construct($io, $interactive = false, $verboseLabel = null)
+    public function __construct(?IOInterface $io = null, bool $interactive = false, ?string $verboseLabel = null)
     {
         if ($io === null) {
             $this->io = new NullIO();
@@ -70,7 +72,7 @@ class Console
      *
      * @return IOInterface
      */
-    public function getIO()
+    public function getIO(): IOInterface
     {
         return $this->io;
     }
@@ -81,7 +83,7 @@ class Console
      * @param bool $interactive
      * @return void
      */
-    public function setInteractive($interactive)
+    public function setInteractive(bool $interactive)
     {
         $this->interactive = $interactive;
     }
@@ -95,12 +97,12 @@ class Console
      * @param bool $default
      * @return bool
      */
-    public function ask($question, $default = false)
+    public function ask(string $question, bool $default = false): bool
     {
         $result = $default;
         if ($this->interactive) {
             if (!$this->getIO()->isInteractive()) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     'Interactive options cannot be used in non-interactive terminals.'
                 );
             }
@@ -113,16 +115,15 @@ class Console
     /**
      * Log the given message with verbosity and formatting
      *
-     * @param $message
+     * @param string $message
      * @param int $verbosity
-     * @param string $format
+     * @param string|null $format
      * @return void
      */
-    public function log($message, $verbosity = Console::NORMAL, $format = null)
+    public function log(string $message, int $verbosity = Console::NORMAL, ?string $format = null)
     {
         if ($format) {
-            $formatClose = str_replace('<', '</', $format);
-            $message = "$format$message$formatClose";
+            $message = $this->formatString($message, $format);
         }
         $this->getIO()->writeError($message, true, $verbosity);
     }
@@ -130,37 +131,37 @@ class Console
     /**
      * Helper method to log the given message with <info> formatting
      *
-     * @param $message
+     * @param string $message
      * @param int $verbosity
      * @return void
      */
-    public function info($message, $verbosity = Console::NORMAL)
+    public function info(string $message, int $verbosity = Console::NORMAL)
     {
-        $this->log($message, $verbosity, static::FORMAT_INFO);
+        $this->log($message, $verbosity, self::FORMAT_INFO);
     }
 
     /**
      * Helper method to log the given message with <comment> formatting
      *
-     * @param $message
+     * @param string $message
      * @param int $verbosity
      * @return void
      */
-    public function comment($message, $verbosity = Console::NORMAL)
+    public function comment(string $message, int $verbosity = Console::NORMAL)
     {
-        $this->log($message, $verbosity, static::FORMAT_COMMENT);
+        $this->log($message, $verbosity, self::FORMAT_COMMENT);
     }
 
     /**
      * Helper method to log the given message with <warning> formatting
      *
-     * @param $message
+     * @param string $message
      * @param int $verbosity
      * @return void
      */
-    public function warning($message, $verbosity = Console::NORMAL)
+    public function warning(string $message, int $verbosity = Console::NORMAL)
     {
-        $this->log($message, $verbosity, static::FORMAT_WARN);
+        $this->log($message, $verbosity, self::FORMAT_WARN);
     }
 
     /**
@@ -169,20 +170,19 @@ class Console
      * A null $label will use the globally configured $verboseLabel
      *
      * @param string $message
-     * @param null $label
+     * @param string|null $label
      * @param int $verbosity
-     * @param string $format
+     * @param string|null $format
      * @return void
      */
     public function labeledVerbose(
-        $message,
-        $label = null,
-        $verbosity = Console::VERBOSE,
-        $format = null
+        string $message,
+        ?string $label = null,
+        int $verbosity = Console::VERBOSE,
+        ?string $format = null
     ) {
         if ($format) {
-            $formatClose = str_replace('<', '</', $format);
-            $message = "$format$message$formatClose";
+            $message = $this->formatString($message, $format);
         }
         if ($label === null) {
             $label = $this->verboseLabel;
@@ -197,12 +197,12 @@ class Console
      * Formats with <error> and logs to Console::QUIET followed by the exception's message at Console::NORMAL
      *
      * @param string $message
-     * @param \Exception $exception
+     * @param Exception|null $exception
      * @return void
      */
-    public function error($message, $exception = null)
+    public function error(string $message, ?Exception $exception = null)
     {
-        $this->log($message, static::QUIET, static::FORMAT_ERROR);
+        $this->log($message, self::QUIET, self::FORMAT_ERROR);
         if ($exception) {
             $this->log($exception->getMessage());
         }
@@ -214,8 +214,21 @@ class Console
      * @param string $verboseLabel
      * @return void
      */
-    public function setVerboseLabel($verboseLabel)
+    public function setVerboseLabel(string $verboseLabel)
     {
         $this->verboseLabel = $verboseLabel;
+    }
+
+    /**
+     * Helper function to wrap a string in the given format tag
+     *
+     * @param string $str
+     * @param string $formatTag
+     * @return string
+     */
+    public function formatString(string $str, string $formatTag): string
+    {
+        $formatClose = str_replace('<', '</', $formatTag);
+        return $formatTag . $str . $formatClose;
     }
 }

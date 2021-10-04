@@ -2,7 +2,7 @@
     "name": "magento/project-community-edition",
     "version": "1000.1000.1000",
     "type": "project",
-    "description": "Test Magento root project composer.json for the target upgrade version",
+    "description": "Test root project composer.json for the target upgrade version",
     "require": {
         "magento/product-community-edition" : "1000.1000.1000",
         "magento/composer-root-update-plugin": "*",

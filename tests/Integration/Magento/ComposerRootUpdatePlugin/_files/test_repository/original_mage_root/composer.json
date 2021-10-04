@@ -2,7 +2,7 @@
     "name": "magento/project-community-edition",
     "version": "999.999.999",
     "type": "project",
-    "description": "Test Magento root project composer.json for the default install of the user's pre-upgrade version",
+    "description": "Test root project composer.json for the default install of the user's pre-upgrade version",
     "require": {
         "magento/product-community-edition" : "999.999.999",
         "magento/composer-root-update-plugin": "*",

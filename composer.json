@@ -1,17 +1,18 @@
 {
   "type": "project",
   "name": "magento/composer-root-update-plugin",
-  "description": "Git source for the Magento root update lookahead composer plugin",
+  "description": "Git source for the Magento Open Source/Adobe Commerce root update lookahead composer plugin",
   "license": [
     "OSL-3.0",
     "AFL-3.0"
   ],
   "require": {
-    "composer/composer": "<1.11 || >=2.0.0 <2.1",
+    "php": "~7.3.0||~7.4.0",
+    "composer/composer": "^1.0 || ^2.0",
     "composer-plugin-api": "^1.0 || ^2.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "~6.5.0"
+    "phpunit/phpunit": "~9.5.0"
   },
   "autoload": {
     "psr-4": {

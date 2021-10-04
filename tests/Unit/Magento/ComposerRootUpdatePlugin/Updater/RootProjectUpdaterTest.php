@@ -25,57 +25,57 @@ use Magento\ComposerRootUpdatePlugin\UpdatePluginTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Console\Input\InputInterface;
 
-class MagentoRootUpdaterTest extends UpdatePluginTestCase
+class RootProjectUpdaterTest extends UpdatePluginTestCase
 {
     /**
-     * @var MockObject|Composer
+     * @var MockObject|Composer $composer
      */
     public $composer;
 
     /**
-     * @var RootPackage
+     * @var RootPackage $installRoot
      */
     public $installRoot;
 
     /**
-     * @var RootPackage
+     * @var RootPackage $expectedNoOverride
      */
     public $expectedNoOverride;
 
     /**
-     * @var RootPackage
+     * @var RootPackage $expectedWithOverride
      */
     public $expectedWithOverride;
 
     /**
-     * @var MockObject|EventDispatcher
+     * @var MockObject|EventDispatcher $eventDispatcher
      */
     public $eventDispatcher;
 
     /**
-     * @var MockObject|InputInterface
+     * @var MockObject|InputInterface $input
      */
     public $input;
 
     /**
-     * @var MockObject|BaseIO
+     * @var MockObject|BaseIO $io
      */
     public $io;
 
     /**
-     * @var Console
+     * @var Console $console
      */
     public $console;
 
     /**
-     * @var MockObject|RootPackageRetriever
+     * @var MockObject|RootPackageRetriever $retriever
      */
     public $retriever;
 
-    public function testMagentoUpdateSetsFieldsNoOverride()
+    public function testSetsFieldsNoOverride()
     {
-        $updater = new MagentoRootUpdater($this->console, $this->composer);
-        $updater->runUpdate($this->retriever, false, true, '7.0', 'stable');
+        $updater = new RootProjectUpdater($this->console, $this->composer);
+        $updater->runUpdate($this->retriever, false, true, '7.0', 'stable', false);
         $result = $updater->getJsonChanges();
 
         $this->assertLinksEqual($this->expectedNoOverride->getRequires(), $result['require']);
@@ -91,10 +91,10 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
         $this->assertEquals($this->expectedNoOverride->getSuggests(), $result['suggest']);
     }
 
-    public function testMagentoUpdateSetsFieldsWithOverride()
+    public function testSetsFieldsWithOverride()
     {
-        $updater = new MagentoRootUpdater($this->console, $this->composer);
-        $updater->runUpdate($this->retriever, true, true, '7.0', 'stable');
+        $updater = new RootProjectUpdater($this->console, $this->composer);
+        $updater->runUpdate($this->retriever, true, true, '7.0', 'stable', false);
         $result = $updater->getJsonChanges();
 
         $this->assertLinksEqual($this->expectedWithOverride->getRequires(), $result['require']);
@@ -110,7 +110,7 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
         $this->assertEquals($this->expectedWithOverride->getSuggests(), $result['suggest']);
     }
 
-    public function setUp()
+    public function setUp(): void
     {
         /**
          * Setup input RootPackage objects for runUpdate()
@@ -270,9 +270,7 @@ class MagentoRootUpdaterTest extends UpdatePluginTestCase
         /**
          * Mock package repositories
          */
-        $repo = $this->createPartialMock(ComposerRepository::class, ['hasProviders', 'whatProvides']);
-        $repo->method('hasProviders')->willReturn(true);
-        $repo->method('whatProvides')->willReturn([$targetRoot, $baseRoot]);
+        $repo = $this->createPartialMock(ComposerRepository::class, []);
         $repoManager = $this->createPartialMock(RepositoryManager::class, ['getRepositories']);
         $repoManager->method('getRepositories')->willReturn([$repo]);
         $lockedRepo = $this->getMockForAbstractClass(RepositoryInterface::class);

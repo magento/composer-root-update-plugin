@@ -6,10 +6,12 @@
 
 namespace Magento\ComposerRootUpdatePlugin\Updater;
 
+use Closure;
 use Composer\Package\Link;
 use Composer\Package\RootPackageInterface;
+use Magento\ComposerRootUpdatePlugin\Plugin\Commands\RequireCommerceCommand;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
-use Magento\ComposerRootUpdatePlugin\Plugin\Commands\MageRootRequireCommand;
+use Magento\ComposerRootUpdatePlugin\Plugin\Commands\OverrideRequireCommand;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 
 /**
@@ -20,9 +22,9 @@ class DeltaResolver
     /**
      * Types of action to take on individual values when a delta is found; returned by findResolution()
      */
-    const ADD_VAL = 'add_value';
-    const REMOVE_VAL = 'remove_value';
-    const CHANGE_VAL = 'change_value';
+    public const ADD_VAL = 'add_value';
+    public const REMOVE_VAL = 'remove_value';
+    public const CHANGE_VAL = 'change_value';
 
     /**
      * @var Console $console
@@ -50,38 +52,57 @@ class DeltaResolver
     protected $retriever;
 
     /**
-     * @var RootPackageInterface $originalMageRootPackage
+     * @var RootPackageInterface $originalRootPkg
      */
-    protected $origMageRootPkg;
+    protected $originalRootPkg;
 
     /**
-     * @var RootPackageInterface $targetMageRootPackage
+     * @var RootPackageInterface $targetRootPkg
      */
-    protected $targetMageRootPkg;
+    protected $targetRootPkg;
 
     /**
-     * @var RootPackageInterface $userRootPackage
+     * @var RootPackageInterface $userRootPkg
      */
     protected $userRootPkg;
 
     /**
-     * DeltaResolver constructor.
-     *
+     * @var string $overrideOptLabel
+     */
+    protected $overrideOptLabel;
+
+    /**
+     * @var $interactiveOptLabel
+     */
+    protected $interactiveOptLabel;
+
+    /**
      * @param Console $console
      * @param bool $overrideUserValues
      * @param RootPackageRetriever $retriever
-     * @return void
+     * @param bool $isOverrideCommand
      */
-    public function __construct($console, $overrideUserValues, $retriever)
-    {
+    public function __construct(
+        Console $console,
+        bool $overrideUserValues,
+        RootPackageRetriever $retriever,
+        bool $isOverrideCommand
+    ) {
         $this->console = $console;
         $this->pkgUtils = new PackageUtils($console);
         $this->overrideUserValues = $overrideUserValues;
         $this->retriever = $retriever;
-        $this->origMageRootPkg = $retriever->getOriginalRootPackage($overrideUserValues);
-        $this->targetMageRootPkg = $retriever->getTargetRootPackage();
+        $this->originalRootPkg = $retriever->getOriginalRootPackage($overrideUserValues);
+        $this->targetRootPkg = $retriever->getTargetRootPackage();
         $this->userRootPkg = $retriever->getUserRootPackage();
         $this->jsonChanges = [];
+        if ($isOverrideCommand) {
+            $this->overrideOptLabel = OverrideRequireCommand::OVERRIDE_OPT;
+            $this->interactiveOptLabel = OverrideRequireCommand::INTERACTIVE_OPT;
+        } else {
+            $this->overrideOptLabel = RequireCommerceCommand::OVERRIDE_OPT;
+            $this->interactiveOptLabel = RequireCommerceCommand::INTERACTIVE_OPT;
+        }
     }
 
     /**
@@ -89,10 +110,10 @@ class DeltaResolver
      *
      * @return array
      */
-    public function resolveRootDeltas()
+    public function resolveRootDeltas(): array
     {
-        $orig = $this->origMageRootPkg;
-        $target = $this->targetMageRootPkg;
+        $orig = $this->originalRootPkg;
+        $target = $this->targetRootPkg;
         $user = $this->userRootPkg;
 
         $this->resolveLinkSection(
@@ -100,7 +121,7 @@ class DeltaResolver
             $orig->getRequires(),
             $target->getRequires(),
             $user->getRequires(),
-            true
+            false
         );
         $this->resolveLinkSection(
             'require-dev',
@@ -148,54 +169,53 @@ class DeltaResolver
      * Find value deltas from original->target version and resolve any conflicts with overlapping user changes
      *
      * @param string $field
-     * @param array|mixed|null $origMageVal
-     * @param array|mixed|null $targetMageVal
+     * @param array|mixed|null $originalVal
+     * @param array|mixed|null $targetVal
      * @param array|mixed|null $userVal
-     * @param string|null $prettyOrigMageVal
-     * @param string|null $prettyTargetMageVal
+     * @param string|null $prettyOriginalVal
+     * @param string|null $prettyTargetVal
      * @param string|null $prettyUserVal
      * @return string|null ADD_VAL|REMOVE_VAL|CHANGE_VAL to adjust the existing composer.json file, null for no change
      */
     public function findResolution(
-        $field,
-        $origMageVal,
-        $targetMageVal,
+        string $field,
+        $originalVal,
+        $targetVal,
         $userVal,
-        $prettyOrigMageVal = null,
-        $prettyTargetMageVal = null,
-        $prettyUserVal = null
-    ) {
-        $prettyOrigMageVal = $this->prettify($origMageVal, $prettyOrigMageVal);
-        $prettyTargetMageVal = $this->prettify($targetMageVal, $prettyTargetMageVal);
+        ?string $prettyOriginalVal = null,
+        ?string $prettyTargetVal = null,
+        ?string $prettyUserVal = null
+    ): ?string {
+        $prettyOriginalVal = $this->prettify($originalVal, $prettyOriginalVal);
+        $prettyTargetVal = $this->prettify($targetVal, $prettyTargetVal);
         $prettyUserVal = $this->prettify($userVal, $prettyUserVal);
 
         $targetLabel = $this->retriever->getTargetLabel();
         $origLabel = $this->retriever->getOriginalLabel();
 
-        $action = null;
         $conflictDesc = null;
 
-        if ($origMageVal == $targetMageVal || $userVal == $targetMageVal) {
+        if ($originalVal == $targetVal || $userVal == $targetVal) {
             $action = null;
-        } elseif ($origMageVal === null) {
+        } elseif ($originalVal === null) {
             if ($userVal === null) {
-                $action = static::ADD_VAL;
+                $action = self::ADD_VAL;
             } else {
-                $action = static::CHANGE_VAL;
-                $conflictDesc = "add $field=$prettyTargetMageVal but it is instead $prettyUserVal";
+                $action = self::CHANGE_VAL;
+                $conflictDesc = "add $field=$prettyTargetVal but it is instead $prettyUserVal";
             }
-        } elseif ($targetMageVal === null) {
-            $action = static::REMOVE_VAL;
-            if ($userVal !== $origMageVal) {
-                $conflictDesc = "remove the $field=$prettyOrigMageVal entry in $origLabel but it is instead " .
+        } elseif ($targetVal === null) {
+            $action = self::REMOVE_VAL;
+            if ($userVal !== $originalVal) {
+                $conflictDesc = "remove the $field=$prettyOriginalVal entry in $origLabel but it is instead " .
                     $prettyUserVal;
             }
         } else {
-            $action = static::CHANGE_VAL;
-            if ($userVal !== $origMageVal) {
-                $conflictDesc = "update $field to $prettyTargetMageVal from $prettyOrigMageVal in $origLabel";
+            $action = self::CHANGE_VAL;
+            if ($userVal !== $originalVal) {
+                $conflictDesc = "update $field to $prettyTargetVal from $prettyOriginalVal in $origLabel";
                 if ($userVal === null) {
-                    $action = static::ADD_VAL;
+                    $action = self::ADD_VAL;
                     $conflictDesc = "$conflictDesc but the field has been removed";
                 } else {
                     $conflictDesc = "$conflictDesc but it is instead $prettyUserVal";
@@ -209,11 +229,11 @@ class DeltaResolver
     /**
      * Helper function to make a value human-readable
      *
-     * @param string $val
-     * @param string $prettyVal
-     * @return string
+     * @param $val
+     * @param string|null $prettyVal
+     * @return string|null
      */
-    protected function prettify($val, $prettyVal = null)
+    protected function prettify($val, ?string $prettyVal = null): ?string
     {
         if ($prettyVal === null) {
             $prettyVal = json_encode($val, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -225,28 +245,29 @@ class DeltaResolver
     /**
      * Check if a conflict was found and if so adjust the action according to override rules
      *
-     * @param string $action
+     * @param string|null $action
      * @param string|null $conflictDesc
      * @param string $targetLabel
-     * @return string
+     * @return string|null
      */
-    protected function solveIfConflict($action, $conflictDesc, $targetLabel)
+    protected function solveIfConflict(?string $action, ?string $conflictDesc, string $targetLabel): ?string
     {
         if ($conflictDesc !== null) {
             $conflictDesc = "$targetLabel is trying to $conflictDesc in this installation";
 
             $shouldOverride = $this->overrideUserValues;
+            $overrideOpt = $this->overrideOptLabel;
+            $interactiveOpt = $this->interactiveOptLabel;
             if ($this->overrideUserValues) {
                 $this->console->log($conflictDesc);
-                $this->console->log("Overriding local changes due to --" . MageRootRequireCommand::OVERRIDE_OPT . '.');
+                $this->console->log("Overriding local changes due to --$overrideOpt.");
             } else {
                 $shouldOverride = $this->console->ask("$conflictDesc.\nWould you like to override the local changes?");
             }
 
             if (!$shouldOverride) {
                 $this->console->comment("$conflictDesc and will not be changed.  Re-run using " .
-                    '--' . MageRootRequireCommand::OVERRIDE_OPT . ' or --' . MageRootRequireCommand::INTERACTIVE_OPT .
-                    ' to override with Magento values.');
+                    "--$overrideOpt or --$interactiveOpt to override with suggested values.");
                 $action = null;
             }
         }
@@ -258,44 +279,49 @@ class DeltaResolver
      * Process changes to corresponding sets of package version links
      *
      * @param string $section
-     * @param Link[] $origMageLinks
-     * @param Link[] $targetMageLinks
+     * @param Link[] $originalLinks
+     * @param Link[] $targetLinks
      * @param Link[] $userLinks
      * @param bool $verifyOrder
      * @return array
      */
-    public function resolveLinkSection($section, $origMageLinks, $targetMageLinks, $userLinks, $verifyOrder)
-    {
-        $adds = [];
-        $removes = [];
-        $changes = [];
-        $magePkgs = array_unique(array_merge(array_keys($origMageLinks), array_keys($targetMageLinks)));
-        foreach ($magePkgs as $pkg) {
-            if ($section === 'require' && $this->pkgUtils->getMagentoProductEdition($pkg)) {
+    public function resolveLinkSection(
+        string $section,
+        array $originalLinks,
+        array $targetLinks,
+        array $userLinks,
+        bool $verifyOrder
+    ): array {
+        $toAdd = [];
+        $toRemove = [];
+        $toChange = [];
+        $pkgsToCompare = array_unique(array_merge(array_keys($originalLinks), array_keys($targetLinks)));
+        foreach ($pkgsToCompare as $pkg) {
+            if ($section === 'require' && $this->pkgUtils->getMetapackageEdition($pkg)) {
                 continue;
             }
-            $this->resolveLink($section, $pkg, $origMageLinks, $targetMageLinks, $userLinks, $adds, $removes, $changes);
+            $this->resolveLink($section, $pkg, $originalLinks, $targetLinks, $userLinks, $toAdd, $toRemove, $toChange);
         }
 
         $changed = false;
-        if ($adds !== []) {
+        if ($toAdd !== []) {
             $changed = true;
-            $prettyAdds = array_map(function ($package) use ($adds) {
-                $newVal = $adds[$package]->getConstraint()->getPrettyString();
+            $prettyAdds = array_map(function ($package) use ($toAdd) {
+                $newVal = $toAdd[$package]->getConstraint()->getPrettyString();
                 return "$package=$newVal";
-            }, array_keys($adds));
+            }, array_keys($toAdd));
             $this->console->labeledVerbose("Adding $section constraints: " . implode(', ', $prettyAdds));
         }
-        if ($removes !== []) {
+        if ($toRemove !== []) {
             $changed = true;
-            $this->console->labeledVerbose("Removing $section entries: " . implode(', ', $removes));
+            $this->console->labeledVerbose("Removing $section entries: " . implode(', ', $toRemove));
         }
-        if ($changes !== []) {
+        if ($toChange !== []) {
             $changed = true;
-            $prettyChanges = array_map(function ($package) use ($changes) {
-                $newVal = $changes[$package]->getConstraint()->getPrettyString();
+            $prettyChanges = array_map(function ($package) use ($toChange) {
+                $newVal = $toChange[$package]->getConstraint()->getPrettyString();
                 return "$package=$newVal";
-            }, array_keys($changes));
+            }, array_keys($toChange));
             $this->console->labeledVerbose("Updating $section constraints: " . implode(', ', $prettyChanges));
         }
 
@@ -303,8 +329,8 @@ class DeltaResolver
         if ($verifyOrder) {
             $enforcedOrder = $this->getLinkOrderOverride(
                 $section,
-                array_keys($origMageLinks),
-                array_keys($targetMageLinks),
+                array_keys($originalLinks),
+                array_keys($targetLinks),
                 array_keys($userLinks),
                 $changed
             );
@@ -313,12 +339,12 @@ class DeltaResolver
         if ($changed) {
             $this->applyLinkChanges(
                 $section,
-                $targetMageLinks,
+                $targetLinks,
                 $userLinks,
                 $enforcedOrder,
-                $adds,
-                $removes,
-                $changes
+                $toAdd,
+                $toRemove,
+                $toChange
             );
         }
 
@@ -333,42 +359,42 @@ class DeltaResolver
      * @param Link[] $origLinkMap
      * @param Link[] $targetLinkMap
      * @param Link[] $userLinkMap
-     * @param Link[] $adds
-     * @param Link[] $removes
-     * @param Link[] $changes
+     * @param Link[] $toAdd
+     * @param Link[] $toRemove
+     * @param Link[] $toChange
      * @return void
      */
     protected function resolveLink(
-        $section,
-        $pkg,
-        $origLinkMap,
-        $targetLinkMap,
-        $userLinkMap,
-        &$adds,
-        &$removes,
-        &$changes
+        string $section,
+        string $pkg,
+        array $origLinkMap,
+        array $targetLinkMap,
+        array $userLinkMap,
+        array &$toAdd,
+        array &$toRemove,
+        array &$toChange
     ) {
         $field = "$section:$pkg";
-        list($origMageVal, $prettyOrigMageVal) = $this->getConstraintValues($origLinkMap, $pkg);
-        list($targetMageVal, $prettyTargetMageVal) = $this->getConstraintValues($targetLinkMap, $pkg);
+        list($originalVal, $prettyOriginalVal) = $this->getConstraintValues($origLinkMap, $pkg);
+        list($targetVal, $prettyTargetVal) = $this->getConstraintValues($targetLinkMap, $pkg);
         list($userVal, $prettyUserVal) = $this->getConstraintValues($userLinkMap, $pkg);
 
         $action = $this->findResolution(
             $field,
-            $origMageVal,
-            $targetMageVal,
+            $originalVal,
+            $targetVal,
             $userVal,
-            $prettyOrigMageVal,
-            $prettyTargetMageVal,
+            $prettyOriginalVal,
+            $prettyTargetVal,
             $prettyUserVal
         );
 
-        if ($action == static::ADD_VAL) {
-            $adds[$pkg] = $targetLinkMap[$pkg];
-        } elseif ($action == static::REMOVE_VAL) {
-            $removes[] = $pkg;
-        } elseif ($action == static::CHANGE_VAL) {
-            $changes[$pkg] = $targetLinkMap[$pkg];
+        if ($action == self::ADD_VAL) {
+            $toAdd[$pkg] = $targetLinkMap[$pkg];
+        } elseif ($action == self::REMOVE_VAL) {
+            $toRemove[] = $pkg;
+        } elseif ($action == self::CHANGE_VAL) {
+            $toChange[$pkg] = $targetLinkMap[$pkg];
         }
     }
 
@@ -377,9 +403,9 @@ class DeltaResolver
      *
      * @param Link[] $linkMap
      * @param string $pkg
-     * @return array
+     * @return string[]
      */
-    protected function getConstraintValues($linkMap, $pkg)
+    protected function getConstraintValues(array $linkMap, string $pkg): array
     {
         $constraint = key_exists($pkg, $linkMap) ? $linkMap[$pkg]->getConstraint() : null;
         $val = null;
@@ -395,24 +421,30 @@ class DeltaResolver
      * Apply added, removed, and changed links to the stored json changes
      *
      * @param string $section
-     * @param Link[] $targetMageLinks
+     * @param Link[] $targetLinks
      * @param Link[] $userLinks
      * @param string[] $order
-     * @param Link[] $adds
-     * @param Link[] $removes
-     * @param Link[] $changes
+     * @param Link[] $toAdd
+     * @param Link[] $toRemove
+     * @param Link[] $toChange
      * @return void
      */
-    protected function applyLinkChanges($section, $targetMageLinks, $userLinks, $order, $adds, $removes, $changes)
-    {
-        $replacements = array_values($adds);
+    protected function applyLinkChanges(
+        string $section,
+        array $targetLinks,
+        array $userLinks,
+        array $order,
+        array $toAdd,
+        array $toRemove,
+        array $toChange
+    ) {
+        $replacements = array_values($toAdd);
 
-        /** @var Link $userLink */
         foreach ($userLinks as $pkg => $userLink) {
-            if (in_array($pkg, $removes)) {
+            if (in_array($pkg, $toRemove)) {
                 continue;
-            } elseif (key_exists($pkg, $changes)) {
-                $replacements[] = $changes[$pkg];
+            } elseif (key_exists($pkg, $toChange)) {
+                $replacements[] = $toChange[$pkg];
             } else {
                 $replacements[] = $userLink;
             }
@@ -420,7 +452,7 @@ class DeltaResolver
 
         usort($replacements, $this->buildLinkOrderComparator(
             $order,
-            array_keys($targetMageLinks),
+            array_keys($targetLinks),
             array_keys($userLinks)
         ));
 
@@ -437,15 +469,15 @@ class DeltaResolver
      * Process changes to an array (non-package link) section
      *
      * @param string $section
-     * @param array|mixed|null $origMageVal
-     * @param array|mixed|null $targetMageVal
+     * @param array|mixed|null $originalVal
+     * @param array|mixed|null $targetVal
      * @param array|mixed|null $userVal
      * @return array
      */
-    public function resolveArraySection($section, $origMageVal, $targetMageVal, $userVal)
+    public function resolveArraySection(string $section, $originalVal, $targetVal, $userVal): array
     {
         $changed = false;
-        $value = $this->resolveNestedArray($section, $origMageVal, $targetMageVal, $userVal, $changed);
+        $value = $this->resolveNestedArray($section, $originalVal, $targetVal, $userVal, $changed);
         if ($changed) {
             $this->jsonChanges[$section] = $value;
         }
@@ -459,29 +491,29 @@ class DeltaResolver
      * Associative arrays are resolved recursively and non-associative arrays are treated as unordered sets
      *
      * @param string $field
-     * @param array|mixed|null $origMageVal
-     * @param array|mixed|null $targetMageVal
+     * @param array|mixed|null $originalVal
+     * @param array|mixed|null $targetVal
      * @param array|mixed|null $userVal
      * @param bool $changed
      * @return array|mixed|null null/empty array indicates to remove the entry from parent
      */
-    public function resolveNestedArray($field, $origMageVal, $targetMageVal, $userVal, &$changed)
+    public function resolveNestedArray(string $field, $originalVal, $targetVal, $userVal, bool &$changed)
     {
         $result = $userVal === null ? [] : $userVal;
 
-        if (is_array($origMageVal) && is_array($targetMageVal) && is_array($userVal)) {
+        if (is_array($originalVal) && is_array($targetVal) && is_array($userVal)) {
             $assocResult = $this->resolveAssociativeArray(
                 $field,
-                $origMageVal,
-                $targetMageVal,
+                $originalVal,
+                $targetVal,
                 $userVal,
                 $changed
             );
 
             $flatResult = $this->resolveFlatArray(
                 $field,
-                $origMageVal,
-                $targetMageVal,
+                $originalVal,
+                $targetVal,
                 $userVal,
                 $changed
             );
@@ -489,17 +521,17 @@ class DeltaResolver
             $result = array_merge($flatResult, $assocResult);
         } else {
             // Some or all of the values aren't arrays so they should all be compared as non-array values
-            $action = $this->findResolution($field, $origMageVal, $targetMageVal, $userVal);
-            $prettyTargetMageVal = json_encode($targetMageVal, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            if ($action == static::ADD_VAL) {
+            $action = $this->findResolution($field, $originalVal, $targetVal, $userVal);
+            $prettyTargetVal = json_encode($targetVal, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            if ($action == self::ADD_VAL) {
                 $changed = true;
-                $this->console->labeledVerbose("Adding $field entry: $prettyTargetMageVal");
-                $result = $targetMageVal;
-            } elseif ($action == static::CHANGE_VAL) {
+                $this->console->labeledVerbose("Adding $field entry: $prettyTargetVal");
+                $result = $targetVal;
+            } elseif ($action == self::CHANGE_VAL) {
                 $changed = true;
-                $this->console->labeledVerbose("Updating $field entry: $prettyTargetMageVal");
-                $result = $targetMageVal;
-            } elseif ($action == static::REMOVE_VAL) {
+                $this->console->labeledVerbose("Updating $field entry: $prettyTargetVal");
+                $result = $targetVal;
+            } elseif ($action == self::REMOVE_VAL) {
                 $changed = true;
                 $this->console->labeledVerbose("Removing $field entry");
                 $result = null;
@@ -513,30 +545,35 @@ class DeltaResolver
      * Process changes to the non-associative portion of an array
      *
      * @param string $field
-     * @param array $origMageArray
-     * @param array $targetMageArray
+     * @param array $originalArray
+     * @param array $targetArray
      * @param array $userArray
      * @param bool $changed
      * @return array
      */
-    protected function resolveFlatArray($field, $origMageArray, $targetMageArray, $userArray, &$changed)
-    {
-        $origMageFlatPart = array_filter($origMageArray, 'is_int', ARRAY_FILTER_USE_KEY);
-        $targetMageFlatPart = array_filter($targetMageArray, 'is_int', ARRAY_FILTER_USE_KEY);
+    protected function resolveFlatArray(
+        string $field,
+        array $originalArray,
+        array $targetArray,
+        array $userArray,
+        bool &$changed
+    ): array {
+        $originalFlatPart = array_filter($originalArray, 'is_int', ARRAY_FILTER_USE_KEY);
+        $targetFlatPart = array_filter($targetArray, 'is_int', ARRAY_FILTER_USE_KEY);
 
         $result = array_filter($userArray, 'is_int', ARRAY_FILTER_USE_KEY);
-        $adds = array_diff(array_diff($targetMageFlatPart, $origMageFlatPart), $result);
-        if ($adds !== []) {
+        $toAdd = array_diff(array_diff($targetFlatPart, $originalFlatPart), $result);
+        if ($toAdd !== []) {
             $changed = true;
-            $this->console->labeledVerbose("Adding $field entries: " . implode(', ', $adds));
-            $result = array_unique(array_merge($result, $adds));
+            $this->console->labeledVerbose("Adding $field entries: " . implode(', ', $toAdd));
+            $result = array_unique(array_merge($result, $toAdd));
         }
 
-        $removes = array_intersect(array_diff($origMageFlatPart, $targetMageFlatPart), $result);
-        if ($removes !== []) {
+        $toRemove = array_intersect(array_diff($originalFlatPart, $targetFlatPart), $result);
+        if ($toRemove !== []) {
             $changed = true;
-            $this->console->labeledVerbose("Removing $field entries: " . implode(', ', $removes));
-            $result = array_diff($result, $removes);
+            $this->console->labeledVerbose("Removing $field entries: " . implode(', ', $toRemove));
+            $result = array_diff($result, $toRemove);
         }
 
         return $result;
@@ -546,32 +583,37 @@ class DeltaResolver
      * Process changes to the associative portion of an array that could be nested
      *
      * @param string $field
-     * @param array $origMageArray
-     * @param array $targetMageArray
+     * @param array $originalArray
+     * @param array $targetArray
      * @param array $userArray
      * @param bool $changed
      * @return array
      */
-    protected function resolveAssociativeArray($field, $origMageArray, $targetMageArray, $userArray, &$changed)
-    {
-        $origMageAssocPart = array_filter($origMageArray, 'is_string', ARRAY_FILTER_USE_KEY);
-        $targetMageAssocPart = array_filter($targetMageArray, 'is_string', ARRAY_FILTER_USE_KEY);
+    protected function resolveAssociativeArray(
+        string $field,
+        array $originalArray,
+        array $targetArray,
+        array $userArray,
+        bool &$changed
+    ): array {
+        $originalAssocPart = array_filter($originalArray, 'is_string', ARRAY_FILTER_USE_KEY);
+        $targetAssocPart = array_filter($targetArray, 'is_string', ARRAY_FILTER_USE_KEY);
         $userAssocPart = array_filter($userArray, 'is_string', ARRAY_FILTER_USE_KEY);
 
         $result = $userAssocPart;
-        $mageKeys = array_unique(
-            array_merge(array_keys($origMageAssocPart), array_keys($targetMageAssocPart))
+        $commerceKeys = array_unique(
+            array_merge(array_keys($originalAssocPart), array_keys($targetAssocPart))
         );
-        foreach ($mageKeys as $key) {
-            if (key_exists($key, $origMageAssocPart)) {
-                $origMageNestedVal = $origMageAssocPart[$key];
+        foreach ($commerceKeys as $key) {
+            if (key_exists($key, $originalAssocPart)) {
+                $originalNestedVal = $originalAssocPart[$key];
             } else {
-                $origMageNestedVal = [];
+                $originalNestedVal = [];
             }
-            if (key_exists($key, $targetMageAssocPart)) {
-                $targetMageNestedVal = $targetMageAssocPart[$key];
+            if (key_exists($key, $targetAssocPart)) {
+                $targetNestedVal = $targetAssocPart[$key];
             } else {
-                $targetMageNestedVal = [];
+                $targetNestedVal = [];
             }
             if (key_exists($key, $userAssocPart)) {
                 $userNestedVal = $userAssocPart[$key];
@@ -581,8 +623,8 @@ class DeltaResolver
 
             $value = $this->resolveNestedArray(
                 "$field.$key",
-                $origMageNestedVal,
-                $targetMageNestedVal,
+                $originalNestedVal,
+                $targetNestedVal,
                 $userNestedVal,
                 $changed
             );
@@ -603,37 +645,42 @@ class DeltaResolver
      * Get the order to use for a link section if local and target versions disagree
      *
      * @param string $section
-     * @param string[] $origMageOrder
-     * @param string[] $targetMageOrder
+     * @param string[] $originalOrder
+     * @param string[] $targetOrder
      * @param string[] $userOrder
      * @param bool $changed
      * @return string[]
      */
-    protected function getLinkOrderOverride($section, $origMageOrder, $targetMageOrder, $userOrder, &$changed)
-    {
+    protected function getLinkOrderOverride(
+        string $section,
+        array $originalOrder,
+        array $targetOrder,
+        array $userOrder,
+        bool &$changed
+    ): array {
         $overrideOrder = [];
 
-        $conflictTargetOrder = array_values(array_intersect($targetMageOrder, $userOrder));
-        $conflictUserOrder = array_values(array_intersect($userOrder, $targetMageOrder));
+        $conflictTargetOrder = array_values(array_intersect($targetOrder, $userOrder));
+        $conflictUserOrder = array_values(array_intersect($userOrder, $targetOrder));
+        $overrideOptLabel = $this->overrideOptLabel;
+        $interactiveOptLabel = $this->interactiveOptLabel;
 
         // Check if the user's link order does not match the target section for links that appear in both
         if ($conflictTargetOrder != $conflictUserOrder) {
-            $conflictOrigOrder = array_values(array_intersect($origMageOrder, $targetMageOrder));
+            $conflictOrigOrder = array_values(array_intersect($originalOrder, $targetOrder));
 
             // Check if the user's order is different than the target order because the order has changed between
-            // the original and target Magento versions
+            // the original and target magento/project versions
             if ($conflictOrigOrder !== $conflictUserOrder) {
                 $targetLabel = $this->retriever->getTargetLabel();
                 $userOrderDesc = "   [\n      " . implode(",\n      ", $conflictUserOrder) . "\n   ]";
                 $targetOrderDesc = "   [\n      " . implode(",\n      ", $conflictTargetOrder) . "\n   ]";
                 $conflictDesc = "$targetLabel is trying to change the existing order of the $section section.\n" .
-                    "Local order:\n$userOrderDesc\n$targetLabel order:\n$targetOrderDesc";
+                    "Local order:\n$userOrderDesc\n$targetLabel order:\n$targetOrderDesc\n";
                 $shouldOverride = $this->overrideUserValues;
                 if ($this->overrideUserValues) {
                     $this->console->log($conflictDesc);
-                    $this->console->log(
-                        'Overriding local order due to --' . MageRootRequireCommand::OVERRIDE_OPT . '.'
-                    );
+                    $this->console->log("Overriding local order due to --$overrideOptLabel.");
                 } else {
                     $shouldOverride = $this->console->ask(
                         "$conflictDesc\nWould you like to override the local order?"
@@ -642,8 +689,7 @@ class DeltaResolver
 
                 if (!$shouldOverride) {
                     $this->console->comment("$conflictDesc but it will not be changed. Re-run using " .
-                        '--' . MageRootRequireCommand::OVERRIDE_OPT . ' or ' .
-                        '--' . MageRootRequireCommand::INTERACTIVE_OPT . ' to override with the Magento order.');
+                        "--$overrideOptLabel or --$interactiveOptLabel to override with the suggested order.");
                     $overrideOrder = $conflictUserOrder;
                 } else {
                     $overrideOrder = $conflictTargetOrder;
@@ -666,13 +712,13 @@ class DeltaResolver
      * Construct a comparison function to use in sorting an array of links by prioritized order lists
      *
      * @param string[] $overrideOrder
-     * @param string[] $targetMageOrder
+     * @param string[] $targetOrder
      * @param string[] $userOrder
-     * @return \Closure
+     * @return Closure
      */
-    protected function buildLinkOrderComparator($overrideOrder, $targetMageOrder, $userOrder)
+    protected function buildLinkOrderComparator(array $overrideOrder, array $targetOrder, array $userOrder): Closure
     {
-        $prioritizedOrderings = [$overrideOrder, $targetMageOrder, $userOrder];
+        $prioritizedOrderings = [$overrideOrder, $targetOrder, $userOrder];
 
         return function ($link1, $link2) use ($prioritizedOrderings) {
             /**
