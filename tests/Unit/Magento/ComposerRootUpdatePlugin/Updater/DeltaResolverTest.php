@@ -15,23 +15,23 @@ use PHPUnit\Framework\MockObject\MockObject;
 class DeltaResolverTest extends UpdatePluginTestCase
 {
     /**
-     * @var MockObject|BaseIO
+     * @var MockObject|BaseIO $io
      */
     public $io;
 
     /**
-     * @var MockObject|RootPackageRetriever
+     * @var MockObject|RootPackageRetriever $retriever
      */
     public $retriever;
 
     /**
-     * @var Console
+     * @var Console $console
      */
     public $console;
 
     public function testFindResolutionAddElement()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $resolution = $resolver->findResolution('field', null, 'newVal', null);
 
         $this->assertEquals(DeltaResolver::ADD_VAL, $resolution);
@@ -39,7 +39,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionRemoveElement()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $resolution = $resolver->findResolution('field', 'oldVal', null, 'oldVal');
 
         $this->assertEquals(DeltaResolver::REMOVE_VAL, $resolution);
@@ -47,7 +47,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionChangeElement()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'oldVal');
 
         $this->assertEquals(DeltaResolver::CHANGE_VAL, $resolution);
@@ -55,7 +55,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionNoUpdate()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'newVal');
 
         $this->assertNull($resolution);
@@ -66,7 +66,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
         $this->io->expects($this->at(0))->method('writeError')
             ->with($this->stringContains('will not be changed'));
         
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $resolution = $resolver->findResolution('field', 'oldVal', 'newVal', 'conflictVal');
 
         $this->assertNull($resolution);
@@ -74,7 +74,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionConflictOverride()
     {
-        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $resolver = new DeltaResolver($this->console, true, $this->retriever, false);
 
         $this->io->expects($this->at(1))->method('writeError')
             ->with($this->stringContains('overriding local changes'));
@@ -86,7 +86,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionConflictOverrideRestoreRemoved()
     {
-        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $resolver = new DeltaResolver($this->console, true, $this->retriever, false);
 
         $this->io->expects($this->at(1))->method('writeError')
             ->with($this->stringContains('overriding local changes'));
@@ -98,7 +98,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionInteractiveConfirm()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $this->console->setInteractive(true);
         $this->io->method('isInteractive')->willReturn(true);
         $this->io->expects($this->once())->method('askConfirmation')->willReturn(true);
@@ -110,7 +110,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionInteractiveNoConfirm()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $this->console->setInteractive(true);
         $this->io->method('isInteractive')->willReturn(true);
         $this->io->expects($this->once())->method('askConfirmation')->willReturn(false);
@@ -122,7 +122,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testFindResolutionNonInteractiveEnvironmentError()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $this->console->setInteractive(true);
         $this->io->method('isInteractive')->willReturn(false);
 
@@ -135,7 +135,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testResolveNestedArrayNonArrayAdd()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $changed = false;
         $result = $resolver->resolveNestedArray('field', null, 'newVal', null, $changed);
 
@@ -145,7 +145,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testResolveNestedArrayNonArrayRemove()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $changed = false;
         $result = $resolver->resolveNestedArray('field', 'oldVal', null, 'oldVal', $changed);
 
@@ -155,7 +155,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testResolveNestedArrayNonArrayChange()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $changed = false;
         $result = $resolver->resolveNestedArray('field', 'oldVal', 'newVal', 'oldVal', $changed);
 
@@ -165,7 +165,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayMismatchedArray()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             'oldVal',
@@ -178,7 +178,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayMismatchedMap()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['oldVal'],
@@ -193,7 +193,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
     {
         $expected = ['val1', 'val2', 'val3'];
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['val1'],
@@ -206,7 +206,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayFlatArrayRemoveElement()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['val1', 'val2', 'val3'],
@@ -219,7 +219,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
 
     public function testResolveArrayFlatArrayAddAndRemoveElement()
     {
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['val1', 'val2', 'val3'],
@@ -234,7 +234,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key1' => 'val1', 'key2' => 'val2', 'key3' => 'val3'];
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => 'val1'],
@@ -249,7 +249,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key2' => 'val2', 'key3' => 'val3'];
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => 'val1', 'key2' => 'val2'],
@@ -264,7 +264,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key3' => 'val3', 'key4' => 'val4'];
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => 'val1', 'key2' => 'val2'],
@@ -279,7 +279,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key1' => ['k1v1', 'k1v2', 'k1v3'], 'key2' => ['k2v1', 'k2v2'], 'key3' => ['k3v1']];
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => ['k1v1'], 'key2' => ['k2v1', 'k2v2']],
@@ -300,7 +300,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
     {
         $expected = ['key1' => ['k1v1', 'k1v3'], 'key2' => ['k2v2'], 'key3' => ['k3v1']];
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveArraySection(
             'extra',
             ['key1' => ['k1v1', 'k1v2'], 'key2' => ['k2v1', 'k2v2']],
@@ -320,16 +320,16 @@ class DeltaResolverTest extends UpdatePluginTestCase
     public function testResolveLinksAddLink()
     {
         $userLink = $this->createLinks(1, 'user/link');
-        $originalMageLinks = $this->createLinks(2);
-        $userLinks = array_merge($originalMageLinks, $userLink);
-        $targetMageLinks = array_merge($originalMageLinks, $this->createLinks(1, 'targetMage/link'));
-        $expected = array_merge($targetMageLinks, $userLink);
+        $originalCommerceLinks = $this->createLinks(2);
+        $userLinks = array_merge($originalCommerceLinks, $userLink);
+        $targetCommerceLinks = array_merge($originalCommerceLinks, $this->createLinks(1, 'targetMage/link'));
+        $expected = array_merge($targetCommerceLinks, $userLink);
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveLinkSection(
             'require',
-            $originalMageLinks,
-            $targetMageLinks,
+            $originalCommerceLinks,
+            $targetCommerceLinks,
             $userLinks,
             false
         );
@@ -340,16 +340,16 @@ class DeltaResolverTest extends UpdatePluginTestCase
     public function testResolveLinksRemoveLink()
     {
         $userLink = $this->createLinks(1, 'user/link');
-        $originalMageLinks = $this->createLinks(2);
-        $userLinks = array_merge($originalMageLinks, $userLink);
-        $targetMageLinks = array_slice($originalMageLinks, 1);
-        $expected = array_merge($targetMageLinks, $userLink);
+        $originalCommerceLinks = $this->createLinks(2);
+        $userLinks = array_merge($originalCommerceLinks, $userLink);
+        $targetCommerceLinks = array_slice($originalCommerceLinks, 1);
+        $expected = array_merge($targetCommerceLinks, $userLink);
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveLinkSection(
             'require',
-            $originalMageLinks,
-            $targetMageLinks,
+            $originalCommerceLinks,
+            $targetCommerceLinks,
             $userLinks,
             false
         );
@@ -360,16 +360,16 @@ class DeltaResolverTest extends UpdatePluginTestCase
     public function testResolveLinksChangeLink()
     {
         $userLink = $this->createLinks(1, 'user/link');
-        $originalMageLinks = $this->createLinks(2);
-        $userLinks = array_merge($originalMageLinks, $userLink);
-        $targetMageLinks = $this->changeLink($originalMageLinks, 1);
-        $expected = array_merge($targetMageLinks, $userLink);
+        $originalCommerceLinks = $this->createLinks(2);
+        $userLinks = array_merge($originalCommerceLinks, $userLink);
+        $targetCommerceLinks = $this->changeLink($originalCommerceLinks, 1);
+        $expected = array_merge($targetCommerceLinks, $userLink);
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveLinkSection(
             'require',
-            $originalMageLinks,
-            $targetMageLinks,
+            $originalCommerceLinks,
+            $targetCommerceLinks,
             $userLinks,
             false
         );
@@ -381,80 +381,80 @@ class DeltaResolverTest extends UpdatePluginTestCase
     {
         $orderedLinks = $this->createLinks(4, 'target/link');
         $reorderedLinks = array_reverse($orderedLinks);
-        $targetMageLinks = array_merge($this->createLinks(1), $orderedLinks);
-        $originalMageLinks = array_merge($this->createLinks(2), $reorderedLinks);
+        $targetCommerceLinks = array_merge($this->createLinks(1), $orderedLinks);
+        $originalCommerceLinks = array_merge($this->createLinks(2), $reorderedLinks);
 
-        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $resolver = new DeltaResolver($this->console, true, $this->retriever, false);
         $result = $resolver->resolveLinkSection(
             'require',
-            $originalMageLinks,
-            $targetMageLinks,
-            $originalMageLinks,
+            $originalCommerceLinks,
+            $targetCommerceLinks,
+            $originalCommerceLinks,
             true
         );
 
-        $this->assertLinksEqual($targetMageLinks, $result['require']);
-        $this->assertLinksOrdered($targetMageLinks, $result['require']);
+        $this->assertLinksEqual($targetCommerceLinks, $result['require']);
+        $this->assertLinksOrdered($targetCommerceLinks, $result['require']);
     }
 
     public function testResolveLinksAddLinkWithOrder()
     {
-        $targetMageLinks = array_merge($this->createLinks(3), $this->createLinks(4, 'target/link'));
-        $originalMageLinks = array_merge($this->createLinks(2), $this->createLinks(4, 'target/link'));
+        $targetCommerceLinks = array_merge($this->createLinks(3), $this->createLinks(4, 'target/link'));
+        $originalCommerceLinks = array_merge($this->createLinks(2), $this->createLinks(4, 'target/link'));
 
-        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $resolver = new DeltaResolver($this->console, true, $this->retriever, false);
         $result = $resolver->resolveLinkSection(
             'require',
-            $originalMageLinks,
-            $targetMageLinks,
-            $originalMageLinks,
+            $originalCommerceLinks,
+            $targetCommerceLinks,
+            $originalCommerceLinks,
             true
         );
 
-        $this->assertLinksEqual($targetMageLinks, $result['require']);
-        $this->assertLinksOrdered($targetMageLinks, $result['require']);
+        $this->assertLinksEqual($targetCommerceLinks, $result['require']);
+        $this->assertLinksOrdered($targetCommerceLinks, $result['require']);
     }
 
     public function testResolveLinksOrderOverride()
     {
         $orderedLinks = $this->createLinks(4, 'target/link');
         $reorderedLinks = array_reverse($orderedLinks);
-        $originalMageLinks = $this->createLinks(2);
-        $targetMageLinks = array_merge($originalMageLinks, $orderedLinks);
-        $userLinks = array_merge($originalMageLinks, $reorderedLinks);
+        $originalCommerceLinks = $this->createLinks(2);
+        $targetCommerceLinks = array_merge($originalCommerceLinks, $orderedLinks);
+        $userLinks = array_merge($originalCommerceLinks, $reorderedLinks);
 
         $this->io->expects($this->at(1))->method('writeError')
             ->with($this->stringContains('overriding local order'));
 
-        $resolver = new DeltaResolver($this->console, true, $this->retriever);
+        $resolver = new DeltaResolver($this->console, true, $this->retriever, false);
         $result = $resolver->resolveLinkSection(
             'require',
-            $originalMageLinks,
-            $targetMageLinks,
+            $originalCommerceLinks,
+            $targetCommerceLinks,
             $userLinks,
             true
         );
 
-        $this->assertLinksEqual($targetMageLinks, $result['require']);
-        $this->assertLinksOrdered($targetMageLinks, $result['require']);
+        $this->assertLinksEqual($targetCommerceLinks, $result['require']);
+        $this->assertLinksOrdered($targetCommerceLinks, $result['require']);
     }
 
     public function testResolveLinksOrderNoOverride()
     {
         $orderedLinks = $this->createLinks(4, 'target/link');
         $reorderedLinks = array_reverse($orderedLinks);
-        $originalMageLinks = $this->createLinks(2);
-        $targetMageLinks = array_merge($originalMageLinks, $orderedLinks);
-        $userLinks = array_merge($originalMageLinks, $reorderedLinks);
+        $originalCommerceLinks = $this->createLinks(2);
+        $targetCommerceLinks = array_merge($originalCommerceLinks, $orderedLinks);
+        $userLinks = array_merge($originalCommerceLinks, $reorderedLinks);
 
         $this->io->expects($this->at(0))->method('writeError')
             ->with($this->stringContains('will not be changed'));
 
-        $resolver = new DeltaResolver($this->console, false, $this->retriever);
+        $resolver = new DeltaResolver($this->console, false, $this->retriever, false);
         $result = $resolver->resolveLinkSection(
             'require',
-            $originalMageLinks,
-            $targetMageLinks,
+            $originalCommerceLinks,
+            $targetCommerceLinks,
             $userLinks,
             true
         );
@@ -463,7 +463,7 @@ class DeltaResolverTest extends UpdatePluginTestCase
         $this->assertLinksOrdered($userLinks, $result['require']);
     }
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->io = $this->getMockForAbstractClass(IOInterface::class);
         $this->console = new Console($this->io);

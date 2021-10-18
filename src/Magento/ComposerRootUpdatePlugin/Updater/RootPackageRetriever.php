@@ -22,14 +22,14 @@ use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 
 /**
- * Contains methods to retrieve composer Package objects for the relevant Magento project root packages
+ * Contains methods to retrieve composer Package objects for the relevant magento/project root packages
  */
 class RootPackageRetriever
 {
     /**
      * Label used by getOriginalLabel() and getTargetLabel() when the package is currently unknown
      */
-    const MISSING_ROOT_LABEL = '(unknown Magento root)';
+    protected const MISSING_ROOT_LABEL = '(unknown magento/project root)';
 
     /**
      * @var Console $console
@@ -102,22 +102,20 @@ class RootPackageRetriever
     protected $prettyTargetVersion;
 
     /**
-     * RootPackageRetriever constructor.
-     *
      * @param Console $console
      * @param Composer $composer
      * @param string $targetEdition
      * @param string $targetConstraint
-     * @param string $overrideOrigEdition
-     * @param string $overrideOrigVersion
+     * @param string|null $overrideOrigEdition
+     * @param string|null $overrideOrigVersion
      */
     public function __construct(
-        $console,
-        $composer,
-        $targetEdition,
-        $targetConstraint,
-        $overrideOrigEdition = null,
-        $overrideOrigVersion = null
+        Console $console,
+        Composer $composer,
+        string $targetEdition,
+        string $targetConstraint,
+        ?string $overrideOrigEdition = null,
+        ?string $overrideOrigVersion = null
     ) {
         $this->console = $console;
         $this->composer = $composer;
@@ -141,12 +139,12 @@ class RootPackageRetriever
     }
 
     /**
-     * Get the project package that should be used as the basis for Magento root comparisons
+     * Get the magento/project package that should be used as the basis for root comparisons
      *
      * @param bool $overrideOption
      * @return PackageInterface|bool
      */
-    public function getOriginalRootPackage($overrideOption)
+    public function getOriginalRootPackage(bool $overrideOption)
     {
         if (!$this->fetchedOrig) {
             $originalRootPackage = null;
@@ -154,15 +152,15 @@ class RootPackageRetriever
             $originalVersion = $this->origVersion;
             $prettyOrigVersion = $this->prettyOrigVersion;
             if ($originalEdition && $originalVersion) {
-                $originalRootPackage = $this->fetchMageRootFromRepo($originalEdition, $prettyOrigVersion);
+                $originalRootPackage = $this->fetchProjectFromRepo($originalEdition, $prettyOrigVersion);
             }
 
             if (!$originalRootPackage) {
                 if (!$originalEdition || !$originalVersion) {
-                    $this->console->warning('No Magento metapackage was found in the current installation.');
+                    $this->console->warning('No magento/product metapackage was found in the current installation.');
                 } else {
                     $metapackageName = $this->pkgUtils->getMetapackageName($originalEdition);
-                    $this->console->warning('The Magento project package corresponding to the currently installed ' .
+                    $this->console->warning('The magento/project package corresponding to the currently installed ' .
                         "\"$metapackageName: $prettyOrigVersion\" package is unavailable.");
                 }
 
@@ -188,20 +186,20 @@ class RootPackageRetriever
     }
 
     /**
-     * Get the project package that should be used as the target for Magento root comparisons
+     * Get the magento/project package that should be used as the target for root comparisons
      *
      * @param bool $ignorePlatformReqs
-     * @param string $phpVersion
+     * @param string|null $phpVersion
      * @param string $preferredStability
      * @return PackageInterface|bool
      */
     public function getTargetRootPackage(
-        $ignorePlatformReqs = true,
-        $phpVersion = null,
-        $preferredStability = 'stable'
+        bool $ignorePlatformReqs = true,
+        ?string $phpVersion = null,
+        string $preferredStability = 'stable'
     ) {
         if (!$this->fetchedTarget) {
-            $targetRoot = $this->fetchMageRootFromRepo(
+            $targetRoot = $this->fetchProjectFromRepo(
                 $this->targetEdition,
                 $this->targetConstraint,
                 $ignorePlatformReqs,
@@ -226,29 +224,29 @@ class RootPackageRetriever
     /**
      * Get the currently installed root package
      *
-     * @return RootPackageInterface
+     * @return RootPackageInterface|null
      */
-    public function getUserRootPackage()
+    public function getUserRootPackage(): ?RootPackageInterface
     {
         return $this->composer->getPackage();
     }
 
     /**
-     * Retrieve the Magento root package for an edition and version constraint from the composer file's repositories
+     * Retrieve the magento/project package for an edition and version constraint from the composer file's repositories
      *
      * @param string $edition
      * @param string $constraint
      * @param bool $ignorePlatformReqs
-     * @param string $phpVersion
+     * @param string|null $phpVersion
      * @param string $preferredStability
-     * @return PackageInterface|bool Best root package candidate or false if no valid packages found
+     * @return PackageInterface|bool Best project package candidate or false if no valid packages found
      */
-    protected function fetchMageRootFromRepo(
-        $edition,
-        $constraint,
-        $ignorePlatformReqs = true,
-        $phpVersion = null,
-        $preferredStability = 'stable'
+    protected function fetchProjectFromRepo(
+        string $edition,
+        string $constraint,
+        bool $ignorePlatformReqs = true,
+        ?string $phpVersion = null,
+        string $preferredStability = 'stable'
     ) {
         $packageName = $this->pkgUtils->getProjectPackageName($edition);
         $phpVersion = $ignorePlatformReqs ? null : $phpVersion;
@@ -263,9 +261,9 @@ class RootPackageRetriever
         $metapackageName = $this->pkgUtils->getMetapackageName($edition);
         if ($edition != PackageUtils::CLOUD_PKG_EDITION && !$this->pkgUtils->isConstraintStrict($constraint)) {
             $this->console->warning(
-                "The version constraint \"$metapackageName: $constraint\" is not exact; " .
-                'the Magento root updater might not accurately determine the version to use according to other ' .
-                'requirements in this installation. It is recommended to use an exact version number.'
+                "The version constraint \"$metapackageName: $constraint\" is not exact; the root updater plugin " .
+                "might not accurately determine the version to use according to other requirements in this " .
+                "installation. It is recommended to use an exact version number."
             );
         }
 
@@ -281,7 +279,7 @@ class RootPackageRetriever
         );
 
         if (!$bestCandidate) {
-            $err = "Could not find a Magento project package matching \"$metapackageName $constraint\"";
+            $err = "Could not find a magento/project package matching \"$metapackageName $constraint\"";
             if ($phpVersion) {
                 $err = "$err for PHP version $phpVersion";
             }
@@ -301,24 +299,23 @@ class RootPackageRetriever
      * @param array $stabilityFlags
      * @param string $preferredStability
      * @param bool $ignorePlatformReqs
-     * @param string $phpVersion
+     * @param string|null $phpVersion
      * @return PackageInterface|false
      *
      * @see VersionSelector::findBestCandidate()
      */
     protected function findBestCandidate(
-        $packageName,
-        $edition,
-        $constraint,
-        $minStability,
-        $stabilityFlags,
-        $preferredStability,
-        $ignorePlatformReqs,
-        $phpVersion
+        string $packageName,
+        string $edition,
+        string $constraint,
+        string $minStability,
+        array $stabilityFlags,
+        string $preferredStability,
+        bool $ignorePlatformReqs,
+        ?string $phpVersion
     ) {
-        $composerMajorVersion = explode('.', Composer::VERSION)[0];
         $bestCandidate = null;
-        if ($composerMajorVersion == '1') {
+        if (version_compare(Composer::VERSION, '2.0.0', '<')) {
             $bestCandidate = $this->findBestCandidateComposer1(
                 $packageName,
                 $edition,
@@ -328,7 +325,7 @@ class RootPackageRetriever
                 $preferredStability,
                 $phpVersion
             );
-        } elseif ($composerMajorVersion == '2') {
+        } elseif (version_compare(Composer::VERSION, '3.0.0', '<')) {
             $bestCandidate = $this->findBestCandidateComposer2(
                 $packageName,
                 $edition,
@@ -340,7 +337,7 @@ class RootPackageRetriever
             );
         } else {
             $this->console->error(
-                "Fetching Magento root composer failed; unrecognized composer plugin API version"
+                "Fetching root magento/project composer failed; unrecognized composer plugin API version" & Composer::VERSION
             );
         }
         return $bestCandidate;
@@ -355,17 +352,17 @@ class RootPackageRetriever
      * @param string $minStability
      * @param array $stabilityFlags
      * @param string $preferredStability
-     * @param string $phpVersion
+     * @param string|null $phpVersion
      * @return PackageInterface|false
      */
     private function findBestCandidateComposer1(
-        $packageName,
-        $edition,
-        $constraint,
-        $minStability,
-        $stabilityFlags,
-        $preferredStability,
-        $phpVersion
+        string $packageName,
+        string $edition,
+        string $constraint,
+        string $minStability,
+        array $stabilityFlags,
+        string $preferredStability,
+        ?string $phpVersion
     ) {
         $parsedConstraint = (new VersionParser())->parseConstraints($constraint);
         $stability = key_exists($packageName, $stabilityFlags)
@@ -414,13 +411,13 @@ class RootPackageRetriever
      * @return PackageInterface|false
      */
     private function findBestCandidateComposer2(
-        $packageName,
-        $edition,
-        $constraint,
-        $minStability,
-        $stabilityFlags,
-        $preferredStability,
-        $ignorePlatformReqs
+        string $packageName,
+        string $edition,
+        string $constraint,
+        string $minStability,
+        array $stabilityFlags,
+        string $preferredStability,
+        bool $ignorePlatformReqs
     ) {
         $platformOverrides = $this->composer->getConfig()->get('platform') ?: array();
         $platformRepo = new PlatformRepository(array(), $platformOverrides);
@@ -453,28 +450,28 @@ class RootPackageRetriever
     }
 
     /**
-     * Gets the original Magento metapackage edition and version from the package in composer.lock
+     * Gets the original magento/product metapackage edition and version from the package in composer.lock
      *
-     * @param string $overrideEdition
-     * @param string $overrideVersion
+     * @param string|null $overrideEdition
+     * @param string|null $overrideVersion
      * @return void
      */
-    protected function parseVersionAndEditionFromLock($overrideEdition = null, $overrideVersion = null)
+    protected function parseVersionAndEditionFromLock(?string $overrideEdition = null, ?string $overrideVersion = null)
     {
-        $lockedMageProduct = $this->pkgUtils->getLockedProduct();
-        if ($lockedMageProduct) {
+        $lockedProduct = $this->pkgUtils->getLockedProduct();
+        if ($lockedProduct) {
             if ($overrideEdition) {
                 $this->origEdition = $overrideEdition;
             } else {
-                $this->origEdition = $this->pkgUtils->getMagentoProductEdition($lockedMageProduct->getName());
+                $this->origEdition = $this->pkgUtils->getMetapackageEdition($lockedProduct->getName());
             }
 
             if ($overrideVersion) {
                 $this->origVersion = $overrideVersion;
                 $this->prettyOrigVersion = $overrideVersion;
             } else {
-                $this->origVersion = $lockedMageProduct->getVersion();
-                $this->prettyOrigVersion = $lockedMageProduct->getPrettyVersion();
+                $this->origVersion = $lockedProduct->getVersion();
+                $this->prettyOrigVersion = $lockedProduct->getPrettyVersion();
                 if (!$this->prettyOrigVersion) {
                     $this->prettyOrigVersion = $this->origVersion;
                 }
@@ -483,39 +480,39 @@ class RootPackageRetriever
     }
 
     /**
-     * Get the pretty label for the target Magento installation version
+     * Get the pretty label for the target installation version
      *
      * @return string
      */
-    public function getTargetLabel()
+    public function getTargetLabel(): string
     {
         $editionLabel = $this->pkgUtils->getEditionLabel($this->targetEdition);
         if ($editionLabel && $this->prettyTargetVersion) {
-            return "Magento $editionLabel " . $this->prettyTargetVersion;
+            return "$editionLabel " . $this->prettyTargetVersion;
         } elseif ($editionLabel && $this->targetConstraint) {
-            return "Magento $editionLabel " . $this->targetConstraint;
+            return "$editionLabel " . $this->targetConstraint;
         }
-        return static::MISSING_ROOT_LABEL;
+        return self::MISSING_ROOT_LABEL;
     }
 
     /**
-     * Get the pretty label for the original Magento installation version
+     * Get the pretty label for the original project installation version
      *
      * @return string
      */
-    public function getOriginalLabel()
+    public function getOriginalLabel(): string
     {
         $editionLabel = $this->pkgUtils->getEditionLabel($this->origEdition);
         if ($editionLabel && $this->prettyOrigVersion) {
-            return "Magento $editionLabel " . $this->prettyOrigVersion;
+            return "$editionLabel " . $this->prettyOrigVersion;
         }
-        return static::MISSING_ROOT_LABEL;
+        return self::MISSING_ROOT_LABEL;
     }
 
     /**
      * @return string
      */
-    public function getOriginalEdition()
+    public function getOriginalEdition(): string
     {
         return $this->origEdition;
     }
@@ -523,15 +520,15 @@ class RootPackageRetriever
     /**
      * @return string
      */
-    public function getOriginalVersion()
+    public function getOriginalVersion(): string
     {
         return $this->origVersion;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getPrettyOriginalVersion()
+    public function getPrettyOriginalVersion(): ?string
     {
         return $this->prettyOrigVersion;
     }
@@ -539,7 +536,7 @@ class RootPackageRetriever
     /**
      * @return string
      */
-    public function getTargetEdition()
+    public function getTargetEdition(): string
     {
         return $this->targetEdition;
     }
@@ -547,16 +544,8 @@ class RootPackageRetriever
     /**
      * @return string
      */
-    public function getTargetVersion()
+    public function getTargetVersion(): string
     {
         return $this->targetVersion;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPrettyTargetVersion()
-    {
-        return $this->prettyTargetVersion;
     }
 }

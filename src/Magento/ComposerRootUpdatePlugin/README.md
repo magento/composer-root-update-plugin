@@ -2,60 +2,48 @@
 
 ## Purpose of plugin
 
-The `magento/composer-root-update-plugin` Composer plugin resolves changes that need to be made to the root project `composer.json` file before updating to a new Magento product requirement.
+The `magento/composer-root-update-plugin` Composer plugin resolves changes that need to be made to the root project `composer.json` file before updating to a new magento/product or magento/magento-cloud metapackage requirement.
 
-This is accomplished by comparing the root `composer.json` file for the Magento project corresponding to the Magento version and edition in the current installation with the Magento project `composer.json` file for the target Magento product or cloud metapackage when the `composer require` command runs and applying any deltas found between the two files if they do not conflict with the existing `composer.json` file in the Magento root directory.
+This is accomplished by comparing the root `composer.json` file for the Magento Open Source or Adobe Commerce project corresponding to the Magento version and edition in the current installation with the Magento project `composer.json` file for the target Magento product or cloud metapackage when the `composer require-commerce` command runs and applying any deltas found between the two files if they do not conflict with the existing `composer.json` file in the project root directory.
 
 # Getting Started
 
 ## System requirements
 
-The `magento/composer-root-update-plugin` package requires Composer version 1.10.19 or earlier, or version 2.0.0 - 2.0.8. Compatibility with newer Composer versions will be tested and added in future plugin versions. 
+The `magento/composer-root-update-plugin` package requires PHP 7.3 or higher.
 
 ## Installation
 
-To install the plugin, run the following commands in the Magento root directory.
+To install the plugin, run the following commands in the project root directory.
     
-    composer require magento/composer-root-update-plugin ~1.1 --no-update
+    composer require magento/composer-root-update-plugin ~2.0 --no-update
     composer update 
 
 # Usage
 
-The plugin adds functionality to the `composer require` command when a new Magento product or cloud metapackage is required, and in most cases will not need additional options or commands run to function.
+The plugin adds a new `require-commerce` command which extends the native `composer require` command, and in most cases will not need additional options or commands run to function.
 
-If the `composer require` command for the target Magento package fails, one of the following may be necessary.
+If the native `require` functionality for the target metapackage fails, one of the following may be necessary.
 
-## Installations that started with another Magento product
+## Installations that started with another Magento Open Source or Adobe Commerce product
 
-If the local Magento installation has previously been updated from a previous Magento product version or edition without the plugin installed, the root `composer.json` file may still have values from the earlier package that need to be updated to the current Magento requirement before updating to the target Magento product.
+If the local installation has previously been updated from a previous Magento Open Source or Adobe Commerce version or edition without the plugin installed, the root `composer.json` file may still have values from the earlier package that need to be updated to the current metapackage requirement before updating to the target metapackage.
 
-In this case, run the following command with the appropriate values to correct the existing `composer.json` file before proceeding with the expected `composer require` command for the target Magento product.
+In this case, run the following command with the appropriate values to correct the existing `composer.json` file before proceeding with the expected `composer require-commerce` command for the target magento/product or magento/magento-cloud metapackage.
 
-    composer require <current_Magento_package> <current_version> --base-magento-edition '<Open Source|Commerce>' --base-magento-version <original_Magento_version>
+    composer require-commerce <current_metapackage> <current_version> --base-project-edition '<Open Source|Commerce>' --base-project-version <original_version>
 
-These options are not valid for Magento Cloud installations.
+These options are not valid for Adobe Commerce Cloud installations.
 
 ## Conflicting custom values
 
-If the `composer.json` file has custom changes that do not match the values the plugin expects according to the installed Magento metapackage, the entries may need to be corrected to values compatible with the target Magento version.
+If the `composer.json` file has custom changes that do not match the values the plugin expects according to the installed metapackage, the entries may need to be corrected to values compatible with the target metapackage version.
 
-To resolve these conflicts interactively, re-run the `composer require` command with the `--interactive-magento-conflicts` option.
+To resolve these conflicts interactively, re-run the `composer require-commerce` command with the `--interactive-root-conflicts` option.
 
-To override all conflicting custom values with the expected Magento values, re-run the `composer require` command with the `--use-default-magento-values` option.
+To override all conflicting custom values with the expected root project values, re-run the `composer require-commerce` command with the `--force-root-updates` option.
 
-## Bypassing the plugin
-
-To run the native `composer require` command without the plugin's updates, use the `--skip-magento-root-plugin` option.
-
-## Refreshing the plugin for the Web Setup Wizard
-
-If the `var` directory in the Magento root folder has been cleared, the plugin may need to be re-installed there to function when updating Magento through the Web Setup Wizard.
-
-To reinstall the plugin in `var`, run the following command in the Magento root directory.
-
-    composer magento-update-plugin install
-
-## Example use case: Upgrading from Magento 2.2.8 to Magento 2.3.1
+## Example use case: Upgrading from Magento Open Source 2.2.8 to Magento Open Source 2.3.1
 
 ### Without `magento/composer-root-update-plugin`:
 
@@ -86,11 +74,11 @@ Because the `sebastian/phpcpd` requirement exists in the root `composer.json` fi
 
 In the `composer.json` file for `magento/project-community-edition` 2.3.1, that `sebastian/phpcpd` entry in `"require-dev"` has changed to `~3.0.0`, which is compatible with the `symfony/console` versions allowed by `magento/magento2-base` 2.3.1. However, without this plugin, Composer does not know that the value needs to change because the commands to upgrade Magento use the `magento/product-community-edition` metapackage and not the root `magento/project-community-edition` project package.
 
-This is only one of the changes to the root project `composer.json` file between Magento 2.2.8 and 2.3.1. There are several others, and future Magento versions can (and likely will) require further updates to the file.
+This is only one of the changes to the root project `composer.json` file between Magento Open Source 2.2.8 and 2.3.1. There are several others, and future versions can (and likely will) require further updates to the file.
 
-The changes to the root project `composer.json` files can be done manually by the user without the plugin, but the values that need to change can differ depending on the Magento versions involved and user-customized values may already override the Magento defaults. This means the exact upgrade steps necessary can be different for every user and determining the correct changes to make manually for a given user's configuration may be error-prone. 
+The changes to the root project `composer.json` files can be done manually by the user without the plugin, but the values that need to change can differ depending on the product versions involved and user-customized values may already override the expected project defaults. This means the exact upgrade steps necessary can be different for every user and determining the correct changes to make manually for a given user's configuration may be error-prone. 
 
-For reference, these are the `"require"` and `"require-dev"` sections for default installations (no user customizations) of Magento Open Source versions 2.2.8 and 2.3.1. It is important to note that these sections of `composer.json` are not the only ones that can change between versions. The `"autoload"` and `"conflict"` sections, for example, can also affect Magento functionality and need to be kept up-to-date with the installed Magento versions.
+For reference, these are the `"require"` and `"require-dev"` sections for default installations (no user customizations) of Magento Open Source versions 2.2.8 and 2.3.1. It is important to note that these sections of `composer.json` are not the only ones that can change between versions. The `"autoload"` and `"conflict"` sections, for example, can also affect product functionality and need to be kept up-to-date with the installed versions.
 
  - **2.2.8**
    ```
@@ -140,26 +128,15 @@ Loading composer repositories with package information
 Updating dependencies (including require-dev)
 Package operations: 1 install, 0 updates, 0 removals
   - Installing magento/composer-root-update-plugin (1.1.0): Downloading (100%)         
-Installing "magento/composer-root-update-plugin: 1.1.0" for the Web Setup Wizard
-Loading composer repositories with package information
-Updating dependencies
-Package operations: 18 installs, 0 updates, 0 removals
-  - Installing ...
-  ...
-  - Installing magento/composer-root-update-plugin (1.1.0): Downloading (100%)
-Writing lock file
-Generating autoload files
 Writing lock file
 Generating autoload files
 ```
 
-As is normal for `composer require`, `magento/composer-root-update-plugin` is added to the `composer.json` file. The plugin also installs itself in the directory used by the Magento Web Setup Wizard during dependency validation.
-
-With the plugin installed, the user proceeds with the `composer require` command for Magento Open Source 2.3.1 (`--verbose` mode used here for demonstration).
+With the plugin installed, the user uses the `composer require-commerce` command for Magento Open Source 2.3.1 (`--verbose` mode used here for demonstration).
 
 ```
-$ composer require magento/product-community-edition 2.3.1 --no-update --verbose
- [Magento Open Source 2.3.1] Base Magento project package version: magento/project-community-edition 2.2.8
+$ composer require-commerce magento/product-community-edition 2.3.1 --no-update --verbose
+ [Magento Open Source 2.3.1] Base root project package version: magento/project-community-edition 2.2.8
  [Magento Open Source 2.3.1] Removing require entries: composer/composer
  [Magento Open Source 2.3.1] Adding require-dev constraints: allure-framework/allure-phpunit=~1.2.0
  [Magento Open Source 2.3.1] Updating require-dev constraints: magento/magento2-functional-testing-framework=~2.3.13, phpunit/phpunit=~6.5.0, squizlabs/php_codesniffer=3.3.1, friendsofphp/php-cs-fixer=~2.13.0, sebastian/phpcpd=~3.0.0
@@ -188,7 +165,7 @@ Generating autoload files
 
 With the updated values from Magento Open Source 2.3.1, the `symfony/console` conflict no longer exists and the update occurs as expected.
 
-For reference, these are the `"require"` and `"require-dev"` sections from the `composer.json` file after `composer require magento/product-community-edition 2.3.1 --no-update` runs with the plugin on a Magento Open Source 2.2.8 installation. They contain exactly the same entries as the default Magento Open Source 2.3.1 root `composer.json` file (with the addition of the `magento/composer-root-update-plugin` requirement).
+For reference, these are the `"require"` and `"require-dev"` sections from the `composer.json` file after `composer require-commerce magento/product-community-edition 2.3.1 --no-update` runs with the plugin on a Magento Open Source 2.2.8 installation. They contain exactly the same entries as the default Magento Open Source 2.3.1 root `composer.json` file (with the addition of the `magento/composer-root-update-plugin` requirement).
 
    ```
     "require": {

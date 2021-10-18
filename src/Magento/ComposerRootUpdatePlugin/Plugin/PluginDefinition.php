@@ -8,21 +8,27 @@ namespace Magento\ComposerRootUpdatePlugin\Plugin;
 
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
-use Composer\Installer;
-use Composer\Installer\PackageEvent;
+use Composer\Factory;
+use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
+use Composer\Package\Version\VersionParser;
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 use Composer\Plugin\Capable;
+use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
-use Magento\ComposerRootUpdatePlugin\Setup\WebSetupWizardPluginInstaller;
+use Composer\Plugin\PreCommandRunEvent;
+use Magento\ComposerRootUpdatePlugin\Plugin\Commands\RequireCommerceCommand;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
+use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
+use Symfony\Component\Console\Helper\HelperSet;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 /**
- * Composer's entry point for the plugin, defines the command provider and Web Setup Wizard Installer's event triggers
+ * Composer's entry point for the plugin, defines the command provider
  */
 class PluginDefinition implements PluginInterface, Capable, EventSubscriberInterface
 {
-    const PACKAGE_NAME = 'magento/composer-root-update-plugin';
+    public const PACKAGE_NAME = 'magento/composer-root-update-plugin';
 
     /**
      * @inheritdoc
@@ -57,28 +63,49 @@ class PluginDefinition implements PluginInterface, Capable, EventSubscriberInter
     }
 
     /**
-     * When a package is installed or updated, check if the WebSetupWizard installation needs to be updated
+     * Subscribe to the PRE_COMMAND_RUN event to check if the require command is being used instead of require-commerce
      *
-     * @return array
+     * @return string[]
      */
     public static function getSubscribedEvents()
     {
-        return [Installer\PackageEvents::POST_PACKAGE_INSTALL => 'packageUpdate',
-            Installer\PackageEvents::POST_PACKAGE_UPDATE => 'packageUpdate'];
+        return [PluginEvents::PRE_COMMAND_RUN => 'checkForDeprecatedRequire'];
     }
 
     /**
-     * Forward package update events to WebSetupWizardPluginInstaller to update the plugin on install or version change
+     * If the 'require' command is being run with magento/product-community-edition, magento/product-enterprise-edition,
+     * or magento/magento-cloud-metapackage, tell the user to use 'require-commerce' instead
      *
-     * @param PackageEvent $event
-     * @return void
+     * @param PreCommandRunEvent $event
      */
-    public function packageUpdate(PackageEvent $event)
+    public function checkForDeprecatedRequire(PreCommandRunEvent $event): void
     {
-        // Safeguard against the source file being removed before the event is triggered
-        if (class_exists('\Magento\ComposerRootUpdatePlugin\Setup\WebSetupWizardPluginInstaller')) {
-            $setupWizardInstaller = new WebSetupWizardPluginInstaller(new Console($event->getIO()));
-            $setupWizardInstaller->packageEvent($event);
+        $command = $event->getCommand();
+        $input = $event->getInput();
+        if ($command == 'require' && ($requires = $input->getArgument('packages'))) {
+            $parser = new VersionParser();
+            $requires = $parser->parseNameVersionPairs($requires);
+            foreach ($requires as $requirement) {
+                $packageName = strtolower($requirement['name']);
+                if ($packageName == PackageUtils::OPEN_SOURCE_METAPACKAGE
+                    || $packageName == PackageUtils::COMMERCE_METAPACKAGE
+                    || $packageName == PackageUtils::CLOUD_METAPACKAGE
+                ) {
+                    $newCmd = RequireCommerceCommand::COMMAND_NAME;
+                    $console = new Console(new ConsoleIO($input, new ConsoleOutput(), new HelperSet()), false);
+                    $metaLabels = PackageUtils::OPEN_SOURCE_METAPACKAGE . ', ' . PackageUtils::COMMERCE_METAPACKAGE .
+                        ', or ' . PackageUtils::CLOUD_METAPACKAGE;
+                    if (version_compare(Composer::VERSION, '2.1.6', '>=')) {
+                        $msg = "ERROR: 'composer require' does not function properly for $metaLabels metapackages as " .
+                            "of Composer 2.1.6. Use '$newCmd' instead.";
+                        $console->error($msg);
+                    } else {
+                        $msg = "WARNING: Using 'composer require' for $metaLabels metapackages is deprecated and no " .
+                            "longer supported. '$newCmd' should be used instead.";
+                        $console->comment($msg);
+                    }
+                }
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ use Composer\Json\JsonFile;
 use Composer\Semver\VersionParser;
 use Composer\Repository\CompositeRepository;
 use Composer\Repository\PlatformRepository;
+use Exception;
 use Symfony\Component\Console\Input\InputInterface;
 
 /**
@@ -37,14 +38,14 @@ abstract class ExtendableRequireCommand extends RequireCommand
     protected $jsonFile;
 
     /**
-     * @var bool $mageNewlyCreated
+     * @var bool $pluginNewlyCreated
      */
-    protected $mageNewlyCreated;
+    protected $pluginNewlyCreated;
 
     /**
-     * @var bool|string $mageComposerBackup
+     * @var bool|string $pluginComposerBackup
      */
-    protected $mageComposerBackup;
+    protected $pluginComposerBackup;
 
     /**
      * @var string $preferredStability
@@ -64,8 +65,8 @@ abstract class ExtendableRequireCommand extends RequireCommand
         parent::__construct($name);
         $this->fileName = null;
         $this->jsonFile = null;
-        $this->mageNewlyCreated = null;
-        $this->mageComposerBackup = null;
+        $this->pluginNewlyCreated = null;
+        $this->pluginComposerBackup = null;
         $this->preferredStability = null;
         $this->phpVersion = null;
     }
@@ -80,7 +81,7 @@ abstract class ExtendableRequireCommand extends RequireCommand
      * @param InputInterface $input
      * @return int|array
      */
-    protected function parseComposerJsonFile($input)
+    protected function parseComposerJsonFile(InputInterface $input)
     {
         $file = Factory::getComposerFile();
         $io = $this->getIO();
@@ -129,8 +130,8 @@ abstract class ExtendableRequireCommand extends RequireCommand
 
         $this->fileName = $file;
         $this->jsonFile = $json;
-        $this->mageNewlyCreated = $newlyCreated;
-        $this->mageComposerBackup = $composerBackup;
+        $this->pluginNewlyCreated = $newlyCreated;
+        $this->pluginComposerBackup = $composerBackup;
         $this->preferredStability = $preferredStability;
         $this->phpVersion = $phpVersion;
         return 0;
@@ -140,17 +141,17 @@ abstract class ExtendableRequireCommand extends RequireCommand
      * Interactively ask for the requirement arguments
      *
      * Copied second half of InitCommand::determineRequirements() without calling findBestVersionAndNameForPackage(),
-     * which would try to use existing requirements before the plugin can update new Magento values
+     * which would try to use existing requirements before the plugin can update new project values
      *
      * @see InitCommand::determineRequirements()
      *
      * @return array
-     * @throws \Exception
+     * @throws Exception
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    protected function getRequirementsInteractive()
+    protected function getRequirementsInteractive(): array
     {
         $versionParser = new VersionParser();
         $io = $this->getIO();
@@ -215,7 +216,7 @@ abstract class ExtendableRequireCommand extends RequireCommand
                             return $pkgMatches['name'];
                         }
 
-                        throw new \Exception('Not a valid selection');
+                        throw new Exception('Not a valid selection');
                     };
 
                     $package = $io->askAndValidate(
@@ -266,19 +267,19 @@ abstract class ExtendableRequireCommand extends RequireCommand
      * @param string $message
      * @return void
      */
-    protected function revertMageComposerFile($message)
+    protected function revertRootComposerFile(string $message)
     {
         $file = $this->fileName;
         $io = $this->getIO();
-        if ($this->mageNewlyCreated) {
+        if ($this->pluginNewlyCreated) {
             if (file_exists($this->jsonFile->getPath())) {
                 $io->writeError("\n<error>$message, deleting $file.</error>");
                 unlink($this->jsonFile->getPath());
             }
         } else {
             $io->writeError("\n<error>$message, " .
-                "reverting $file to its original content from before the Magento root update.</error>");
-            file_put_contents($this->jsonFile->getPath(), $this->mageComposerBackup);
+                "reverting $file to its original content from before the magento/project root update.</error>");
+            file_put_contents($this->jsonFile->getPath(), $this->pluginComposerBackup);
         }
     }
 }

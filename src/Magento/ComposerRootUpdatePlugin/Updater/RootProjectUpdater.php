@@ -11,11 +11,12 @@ use Composer\Downloader\FilesystemException;
 use Magento\ComposerRootUpdatePlugin\Utils\PackageUtils;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
 use Magento\ComposerRootUpdatePlugin\Plugin\PluginDefinition;
+use RuntimeException;
 
 /**
- * Handles updates of the Magento root project composer.json file based on necessary changes for the target version
+ * Handles updates of the root project composer.json file based on necessary changes for the target version
  */
-class MagentoRootUpdater
+class RootProjectUpdater
 {
     /**
      * @var Console $console
@@ -38,13 +39,11 @@ class MagentoRootUpdater
     protected $jsonChanges;
 
     /**
-     * MagentoRootUpdater constructor.
-     *
      * @param Console $console
      * @param Composer $composer
      * @return void
      */
-    public function __construct($console, $composer)
+    public function __construct(Console $console, Composer $composer)
     {
         $this->console = $console;
         $this->composer = $composer;
@@ -53,7 +52,7 @@ class MagentoRootUpdater
     }
 
     /**
-     * Look ahead to the target Magento version and execute any changes to the root composer.json file in-memory
+     * Look ahead to the target magento/project version and execute any changes to the root composer.json file in-memory
      *
      * @param RootPackageRetriever $retriever
      * @param bool $overrideOption
@@ -63,12 +62,13 @@ class MagentoRootUpdater
      * @return bool Returns true if updates were necessary and prepared successfully
      */
     public function runUpdate(
-        $retriever,
-        $overrideOption,
-        $ignorePlatformReqs,
-        $phpVersion,
-        $stability
-    ) {
+        RootPackageRetriever $retriever,
+        bool $overrideOption,
+        bool $ignorePlatformReqs,
+        string $phpVersion,
+        string $stability,
+        bool $isOverrideCommand
+    ): bool {
         $composer = $this->composer;
 
         if (!$this->pkgUtils->findRequire($composer, PluginDefinition::PACKAGE_NAME)) {
@@ -82,28 +82,28 @@ class MagentoRootUpdater
         $prettyOrigVersion = $retriever->getPrettyOriginalVersion();
 
         if (!$retriever->getTargetRootPackage($ignorePlatformReqs, $phpVersion, $stability)) {
-            throw new \RuntimeException('Magento root updates cannot run without a valid target package');
+            throw new RuntimeException('Root composer.json updates cannot run without a valid target metapackage');
         }
 
         if ($origEdition == $retriever->getTargetEdition() && $origVersion == $retriever->getTargetVersion()) {
             $this->console->labeledVerbose(
-                'The Magento metapackage requirement matched the current installation; no root updates are required'
+                'The metapackage requirement matches the current installation; no root updates are required'
             );
             return false;
         }
 
         if (!$retriever->getOriginalRootPackage($overrideOption)) {
-            $this->console->log('Skipping Magento composer.json update.');
+            $this->console->log('Skipping root composer.json update.');
             return false;
         }
 
         $this->console->setVerboseLabel($retriever->getTargetLabel());
         $project = $this->pkgUtils->getProjectPackageName($origEdition);
         $this->console->labeledVerbose(
-            "Base Magento project package version: $project $prettyOrigVersion"
+            "Base root project package version: $project $prettyOrigVersion"
         );
 
-        $resolver = new DeltaResolver($this->console, $overrideOption, $retriever);
+        $resolver = new DeltaResolver($this->console, $overrideOption, $retriever, $isOverrideCommand);
 
         $jsonChanges = $resolver->resolveRootDeltas();
 
@@ -150,7 +150,7 @@ class MagentoRootUpdater
         );
 
         if ($retVal === false) {
-            throw new FilesystemException('Failed to write updated Magento root values to ' . $filePath);
+            throw new FilesystemException('Failed to write updated magento/project values to ' . $filePath);
         }
         $this->console->labeledVerbose("$filePath has been updated");
     }
@@ -160,7 +160,7 @@ class MagentoRootUpdater
      *
      * @return array
      */
-    public function getJsonChanges()
+    public function getJsonChanges(): array
     {
         return $this->jsonChanges;
     }

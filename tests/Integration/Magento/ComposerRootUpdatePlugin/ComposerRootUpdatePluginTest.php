@@ -7,9 +7,9 @@
 namespace Magento\ComposerRootUpdatePlugin;
 
 use Composer\Downloader\FilesystemException;
-use Magento\ComposerRootUpdatePlugin\Plugin\Commands\UpdatePluginNamespaceCommands;
+use PHPUnit\Framework\TestCase;
 
-class ComposerRootUpdatePluginTest extends \PHPUnit\Framework\TestCase
+class ComposerRootUpdatePluginTest extends TestCase
 {
     /**
      * @var string $workingDir
@@ -41,27 +41,12 @@ class ComposerRootUpdatePluginTest extends \PHPUnit\Framework\TestCase
      */
     private static $testComposerJsonSource;
 
-    public function testSetupWizardVarInstall()
-    {
-        $this->assertFileExists(static::$workingDir . '/var/vendor/magento/composer-root-update-plugin/composer.json');
-    }
-
-    public function testSetupWizardInstallCommand()
-    {
-        static::deletePath(static::$workingDir . '/var/vendor');
-        $this->assertFileNotExists(static::$workingDir . '/var/vendor/magento/composer-root-update-plugin/composer.json');
-
-        static::execComposer(UpdatePluginNamespaceCommands::NAME . ' install');
-
-        $this->assertFileExists(static::$workingDir . '/var/vendor/magento/composer-root-update-plugin/composer.json');
-    }
-
     public function testUpdateNoOverride()
     {
         $expectedDir = static::$expectedDir;
         static::configureComposerJson(__DIR__ . '/_files/expected_no_override.composer.json', $expectedDir);
 
-        static::execComposer('require magento/product-community-edition=1000.1000.1000 --no-update');
+        static::execComposer('require-commerce magento/product-community-edition=1000.1000.1000 --no-update --verbose');
 
         $this->assertJsonFileEqualsJsonFile("$expectedDir/composer.json", static::$workingDir . '/composer.json');
     }
@@ -72,7 +57,7 @@ class ComposerRootUpdatePluginTest extends \PHPUnit\Framework\TestCase
         static::configureComposerJson(__DIR__ . '/_files/expected_override.composer.json', $expectedDir);
 
         static::execComposer(
-            'require magento/product-community-edition=1000.1000.1000 --no-update --use-default-magento-values'
+            'require-commerce magento/product-community-edition=1000.1000.1000 --no-update --force-root-updates --verbose'
         );
 
         $this->assertJsonFileEqualsJsonFile("$expectedDir/composer.json", static::$workingDir . '/composer.json');
@@ -83,7 +68,7 @@ class ComposerRootUpdatePluginTest extends \PHPUnit\Framework\TestCase
      *
      * @throws FilesystemException
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         $projectRoot = explode('/tests/', __DIR__);
         array_pop($projectRoot);
@@ -107,7 +92,7 @@ class ComposerRootUpdatePluginTest extends \PHPUnit\Framework\TestCase
      * @return void
      * @throws FilesystemException
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         chdir(static::$workingDir);
         static::deletePath(static::$workingDir . '/composer.json');
@@ -124,7 +109,7 @@ class ComposerRootUpdatePluginTest extends \PHPUnit\Framework\TestCase
      * @return void
      * @throws FilesystemException
      */
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         static::deletePath(static::$workingDir);
     }
