@@ -1,7 +1,7 @@
 {
   "type": "project",
   "name": "magento/composer-root-update-plugin",
-  "description": "Git source for the Magento Open Source/Adobe Commerce root update lookahead composer plugin",
+  "description": "Git source for the Magento Open Source/Adobe Commerce root update lookahead composer plugin. Actual plugin composer.json file located under src/Magento/ComposerRootUpdatePlugin directory.",
   "license": [
     "OSL-3.0",
     "AFL-3.0"
