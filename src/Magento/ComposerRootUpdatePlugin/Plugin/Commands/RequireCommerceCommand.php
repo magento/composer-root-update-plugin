@@ -51,6 +51,9 @@ class RequireCommerceCommand extends ExtendableRequireCommand
      */
     protected $console;
 
+    /**
+     * @var array
+     */
     protected $repos;
 
     /**
