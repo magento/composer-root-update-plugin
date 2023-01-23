@@ -22,6 +22,9 @@
             "Magento\\Sniffs\\": "dev/tests/framework/Magento/Sniffs/"
         }
     },
+    "config": {
+        "allow-plugins": true
+    },
     "conflict": {
         "vendor1/conflicting1": "1.0.0",
         "vendor1/conflicting2": "2.1.0",

@@ -37,5 +37,8 @@
     "sample-data": "Suggested Sample Data 1.0.0",
     "vendor/suggested": "Another Suggested Package"
   },
+  "config": {
+    "allow-plugins": true
+  },
   "minimum-stability": "dev"
 }

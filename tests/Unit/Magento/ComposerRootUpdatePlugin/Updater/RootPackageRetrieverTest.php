@@ -15,7 +15,7 @@ use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Repository\ComposerRepository;
-use Composer\Repository\RepositoryInterface;
+use Composer\Repository\LockArrayRepository;
 use Composer\Repository\RepositoryManager;
 use Composer\Util\RemoteFilesystem;
 use Magento\ComposerRootUpdatePlugin\Utils\Console;
@@ -153,7 +153,7 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
 
     public function testGetTargetRootFromRepo()
     {
-        $this->repo->expects($this->any())->method('loadPackages')->willReturn(
+        $this->repo->expects($this->atLeast(1))->method('loadPackages')->willReturn(
             [
                 'namesFound' => [$this->originalRoot->getName()],
                 'packages' => [
@@ -210,7 +210,16 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
             'isLocked',
             'getLockedRepository'
         ]);
-        $lockedRepo = $this->getMockForAbstractClass(RepositoryInterface::class);
+        $lockedRepo = $this->getMockForAbstractClass(
+            LockArrayRepository::class,
+            [],
+            '',
+            true,
+            true,
+            true,
+            ['getPackages'],
+            false
+        );
         $originalProduct = $this->getMockForAbstractClass(PackageInterface::class);
         $originalProduct->method('getName')->willReturn('magento/product-enterprise-edition');
         $originalProduct->method('getVersion')->willReturn('1.1.0.0');
@@ -232,11 +241,15 @@ class RootPackageRetrieverTest extends UpdatePluginTestCase
         $this->originalRoot->method('getVersion')->willReturn('1.1.0.0');
         $this->originalRoot->method('getStabilityPriority')->willReturn(0);
 
-        $this->targetRoot = $this->createPartialMock(Package::class, ['getName', 'getVersion', 'getStabilityPriority']);
+        $this->targetRoot = $this->createPartialMock(
+            Package::class,
+            ['getName', 'getVersion', 'getStabilityPriority', 'getPrettyVersion']
+        );
         $this->targetRoot->id = 2;
         $this->targetRoot->method('getName')->willReturn('magento/project-enterprise-edition');
         $this->targetRoot->method('getVersion')->willReturn('2.0.0.0');
         $this->targetRoot->method('getStabilityPriority')->willReturn(0);
+        $this->targetRoot->method('getPrettyVersion')->willReturn('');
 
         $repoManager = $this->createPartialMock(RepositoryManager::class, ['getRepositories']);
         if ($apiMajorVersion == '1') {
