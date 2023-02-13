@@ -16,6 +16,7 @@ use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Package\RootPackage;
 use Composer\Repository\ComposerRepository;
+use Composer\Repository\LockArrayRepository;
 use Composer\Repository\RepositoryInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Semver\Constraint\Constraint;
@@ -273,7 +274,16 @@ class RootProjectUpdaterTest extends UpdatePluginTestCase
         $repo = $this->createPartialMock(ComposerRepository::class, []);
         $repoManager = $this->createPartialMock(RepositoryManager::class, ['getRepositories']);
         $repoManager->method('getRepositories')->willReturn([$repo]);
-        $lockedRepo = $this->getMockForAbstractClass(RepositoryInterface::class);
+        $lockedRepo = $this->getMockForAbstractClass(
+            LockArrayRepository::class,
+            [],
+            '',
+            true,
+            true,
+            true,
+            ['getPackages'],
+            false
+        );
         $lockedRepo->method('getPackages')->willReturn([
             new Package('magento/product-community-edition', '1.0.0.0', '1.0.0')
         ]);

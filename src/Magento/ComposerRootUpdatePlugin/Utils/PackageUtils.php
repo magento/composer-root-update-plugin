@@ -125,7 +125,7 @@ class PackageUtils
     public function findRequire(Composer $composer, string $packageMatcher)
     {
         $requires = array_values($composer->getPackage()->getRequires());
-        if (@preg_match($packageMatcher, null) === false) {
+        if (@preg_match($packageMatcher, '') === false) {
             foreach ($requires as $link) {
                 if ($packageMatcher == $link->getTarget()) {
                     return $link;

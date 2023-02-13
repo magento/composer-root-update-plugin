@@ -30,6 +30,9 @@
         "vendor1/different-conflicting2": "2.0.0",
         "vendor1/different-conflicting3": "3.0.0"
     },
+    "config": {
+        "allow-plugins": true
+    },
     "extra": {
         "extra-key1": "install1",
         "extra-key2": "target2",

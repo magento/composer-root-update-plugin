@@ -52,6 +52,11 @@ class RequireCommerceCommand extends ExtendableRequireCommand
     protected $console;
 
     /**
+     * @var array
+     */
+    protected $repos;
+
+    /**
      * Use the native RequireCommand config with options/doc additions for the root project composer.json update
      *
      * @return void
