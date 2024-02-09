@@ -61,7 +61,7 @@ class RequireCommerceCommand extends ExtendableRequireCommand
      *
      * @return void
      */
-    protected function configure()
+    protected function configure(): void
     {
         parent::configure();
 
@@ -154,7 +154,7 @@ $pluginHeader
      *
      * @throws Exception
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->console = new Console($this->getIO(), $input->getOption(self::INTERACTIVE_OPT));
         $console = $this->console;
