@@ -69,7 +69,7 @@ class OverrideRequireCommand extends ExtendableRequireCommand
      * @param Application|null $application
      * @return void
      */
-    public function setApplication(Application $application = null)
+    public function setApplication(Application $application = null): void
     {
         // For Composer versions below 2.1.6:
         // In order to trick Composer into overriding its native RequireCommand with this class, the name needs to be
