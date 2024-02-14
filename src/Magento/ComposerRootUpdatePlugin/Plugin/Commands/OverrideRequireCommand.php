@@ -69,7 +69,7 @@ class OverrideRequireCommand extends ExtendableRequireCommand
      * @param Application|null $application
      * @return void
      */
-    public function setApplication(Application $application = null)
+    public function setApplication(Application $application = null): void
     {
         // For Composer versions below 2.1.6:
         // In order to trick Composer into overriding its native RequireCommand with this class, the name needs to be
@@ -86,7 +86,7 @@ class OverrideRequireCommand extends ExtendableRequireCommand
      *
      * @return void
      */
-    protected function configure()
+    protected function configure(): void
     {
         parent::configure();
 
@@ -170,7 +170,7 @@ class OverrideRequireCommand extends ExtendableRequireCommand
      *
      * @throws Exception
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->console = new Console($this->getIO(), $input->getOption(self::INTERACTIVE_OPT));
         $this->pkgUtils = new PackageUtils($this->console);

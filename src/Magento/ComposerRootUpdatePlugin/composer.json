@@ -2,13 +2,13 @@
   "name": "magento/composer-root-update-plugin",
   "type": "composer-plugin",
   "description": "Plugin to look ahead for Magento Open Source or Adobe Commerce project root changes when running composer update for new magento/product or magento/magento-cloud metapackage versions",
-  "version": "2.0.3",
+  "version": "2.0.4-beta1",
   "license": [
     "OSL-3.0",
     "AFL-3.0"
   ],
   "require": {
-    "php": "~7.3.0||~7.4.0||~8.0.0||~8.1.0||~8.2.0",
+    "php": "~7.3.0||~7.4.0||~8.0.0||~8.1.0||~8.2.0||~8.3.0",
     "composer/composer": "^1.0 || ^2.0",
     "composer-plugin-api": "^1.0 || ^2.0"
   },
