@@ -157,7 +157,7 @@ abstract class ExtendableRequireCommand extends RequireCommand
         $io = $this->getIO();
         $requires = [];
         while (null !== $package = $io->ask('Search for a package: ')) {
-            $matches = $this->findPackages($package);
+            $matches = $this->repos->search($package);
 
             if (count($matches)) {
                 $exactMatch = null;
